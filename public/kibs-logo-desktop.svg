@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="180" viewBox="0 0 880 180" role="img" aria-labelledby="title desc">
+  <title id="title">Kibs Systems Ltd</title>
+  <desc id="desc">Kibs Systems Ltd logo with green security monogram, red company name, and black tagline.</desc>
+  <defs>
+    <linearGradient id="brandGreen" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#1fd266"/>
+      <stop offset="1" stop-color="#059447"/>
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-25%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#12351f" flood-opacity=".16"/>
+    </filter>
+  </defs>
+
+  <rect width="880" height="180" rx="30" fill="#67c70f"/>
+  <g filter="url(#softShadow)">
+    <rect x="76" y="34" width="764" height="112" rx="54" fill="#ffffff"/>
+  </g>
+
+  <g transform="translate(34 24)">
+    <circle cx="66" cy="66" r="60" fill="url(#brandGreen)"/>
+    <circle cx="66" cy="66" r="57" fill="none" stroke="#073f22" stroke-opacity=".22" stroke-width="3"/>
+    <path d="M32 101 L52 28 C54 21 64 24 61 32 L53 62 L96 25 C103 19 111 28 104 35 L72 64 L112 101 C119 108 109 119 101 111 L63 75 L52 86 L46 107 C44 116 30 111 32 101Z" fill="#050807"/>
+    <path d="M73 45 C88 45 103 52 103 66 C103 80 88 85 74 85 L60 85 C55 85 55 77 60 77 L76 77 C84 77 92 74 92 67 C92 60 84 56 74 56 C66 56 60 59 56 63 C51 68 44 61 49 55 C54 49 63 45 73 45Z" fill="#ffffff"/>
+    <path d="M72 37 C78 37 78 45 72 45 L60 45 C54 45 54 37 60 37 L72 37Z" fill="#ffffff"/>
+    <path d="M59 92 L97 92 C104 92 104 103 97 103 L59 103 C52 103 52 92 59 92Z" fill="#ffffff"/>
+    <path d="M70 39 L82 102" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(174 43)">
+    <text x="0" y="46" fill="#e31837" font-family="Inter, Arial, Helvetica, sans-serif" font-size="46" font-weight="900" letter-spacing="1.5">
+      KIBS SYSTEMS LTD
+    </text>
+    <rect x="0" y="62" width="615" height="2" fill="#111827" opacity=".14"/>
+    <text x="0" y="96" fill="#111111" font-family="Inter, Arial, Helvetica, sans-serif" font-size="27" font-weight="700">
+      Integrating Technology to your security needs
+    </text>
+  </g>
+</svg>

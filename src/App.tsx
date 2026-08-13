@@ -41,7 +41,6 @@ import type { LucideIcon } from 'lucide-react';
 
 import { Header } from './components/Header';
 import { MobileNav } from './components/MobileNav';
-import { DemoBanner } from './components/DemoBanner';
 import { JobModal } from './components/JobModal';
 
 import {
@@ -55,7 +54,6 @@ import {
   technicians,
   tools,
 } from './data/mockData';
-import { isSupabaseConfigured } from './lib/supabase';
 import type {
   Feedback,
   Job,
@@ -146,7 +144,6 @@ function App() {
   const [selectedJobId, setSelectedJobId] = useState(jobs[0]?.id ?? '');
   const [mobileJobModalOpen, setMobileJobModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [demoModalOpen, setDemoModalOpen] = useState(false);
 
   const [jobSearch, setJobSearch] = useState('');
   const [jobTypeFilter, setJobTypeFilter] = useState<'all' | JobType>('all');
@@ -498,11 +495,8 @@ function App() {
       <Header
         role={role}
         setRole={setRole}
-        isSupabaseConfigured={isSupabaseConfigured}
-        unreadCount={unreadCount}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
-        onOpenDemoModal={() => setDemoModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -569,16 +563,6 @@ function App() {
 
         {/* Main Content Area */}
         <main className="min-w-0 flex-1 pb-20 lg:pb-6 animate-fade-in">
-          {/* Client Presentation Banner */}
-          <DemoBanner
-            isSupabaseConfigured={isSupabaseConfigured}
-            onSimulateTicket={handleSimulateTicket}
-            onSimulateProgress={handleSimulateProgress}
-            onResetDemo={handleResetDemo}
-            demoModalOpen={demoModalOpen}
-            setDemoModalOpen={setDemoModalOpen}
-          />
-
           {role === 'manager' &&
             renderManagerView({
               managerView,
@@ -807,11 +791,6 @@ function renderManagerView(args: {
       <SectionShell
         title="Operations Dashboard"
         eyebrow="Real-time Field Operations"
-        action={
-          <StatusPill tone={isSupabaseConfigured ? 'success' : 'warning'}>
-            {isSupabaseConfigured ? 'Supabase Database Connected' : 'Mock Presentation Active'}
-          </StatusPill>
-        }
       >
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
           <MetricCard
@@ -1169,7 +1148,7 @@ function renderManagerView(args: {
             <p className="text-xs text-slate-500">Kibs Systems Ltd — Uganda Security Engineering</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 space-y-2 text-xs text-slate-700">
-            <p><strong>Version:</strong> 2.0.0 (Client Demo Ready)</p>
+            <p><strong>Version:</strong> 2.0.0</p>
             <p><strong>Backend Engine:</strong> PostgreSQL / Supabase Schema Ready</p>
             <p><strong>Mobile Support:</strong> Full Responsive Mobile PWA Enabled</p>
           </div>
@@ -2080,7 +2059,7 @@ function ReceiptPanel({ icon: Icon, title, body }: { icon: LucideIcon; title: st
       <div className="mt-5 grid gap-2 sm:grid-cols-3">
         <MiniStat label="Status" value="Captured" />
         <MiniStat label="Alert" value="Dispatched" />
-        <MiniStat label="Data" value="Demo Verified" />
+        <MiniStat label="Data" value="Saved" />
       </div>
     </section>
   );

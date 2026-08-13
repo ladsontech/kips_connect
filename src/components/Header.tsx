@@ -1,37 +1,25 @@
 import React from 'react';
 import {
-  Shield,
   UserRound,
   UsersRound,
   Globe,
-  Database,
-  CheckCircle2,
-  AlertCircle,
   Menu,
   X,
-  Bell,
-  Sparkles,
 } from 'lucide-react';
 import type { Role } from '../types';
 
 interface HeaderProps {
   role: Role;
   setRole: (role: Role) => void;
-  isSupabaseConfigured: boolean;
-  unreadCount: number;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
-  onOpenDemoModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   role,
   setRole,
-  isSupabaseConfigured,
-  unreadCount,
   mobileMenuOpen,
   setMobileMenuOpen,
-  onOpenDemoModal,
 }) => {
   const roleItems: { id: Role; label: string; icon: React.ElementType; sub: string }[] = [
     { id: 'manager', label: 'Manager', icon: UsersRound, sub: 'Admin Portal' },
@@ -46,17 +34,19 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src="/kibs-logo.png"
+              src="/kibs-logo-mobile.svg"
               alt="Kibs Systems Ltd"
-              className="h-7 w-auto max-w-[118px] object-contain sm:h-11 sm:max-w-[200px]"
+              className="h-9 w-auto max-w-[118px] object-contain sm:hidden"
+            />
+            <img
+              src="/kibs-logo-desktop.svg"
+              alt="Kibs Systems Ltd"
+              className="hidden h-12 w-auto max-w-[260px] object-contain sm:block lg:max-w-[310px]"
             />
           </div>
           <div className="hidden border-l border-slate-200 pl-3 sm:block">
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-slate-900 tracking-tight text-base">Kibs Connect</span>
-              <span className="rounded bg-kibs-green/15 px-1.5 py-0.5 text-[10px] font-bold text-kibs-deepGreen uppercase tracking-wider">
-                v2.0 Demo
-              </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">Security Field Operations Platform</p>
           </div>
@@ -87,30 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Action Badge & Supabase Indicator */}
         <div className="flex items-center gap-2">
-          {/* Supabase connection trigger button */}
-          <button
-            type="button"
-            onClick={onOpenDemoModal}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all shadow-xs ${
-              isSupabaseConfigured
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
-            }`}
-          >
-            <Database className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden sm:inline">
-              {isSupabaseConfigured ? 'Supabase Live' : 'Demo Mode'}
-            </span>
-            <span className="sm:hidden">
-              {isSupabaseConfigured ? 'Live' : 'Demo'}
-            </span>
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-              }`}
-            />
-          </button>
-
           {/* Mobile Menu Toggle Button */}
           <button
             type="button"
