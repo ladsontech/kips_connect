@@ -34,14 +34,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src="/kibs-logo-mobile.svg"
+              src="/kibs-logo-mobile.png"
               alt="Kibs Systems Ltd"
-              className="h-9 w-auto max-w-[118px] object-contain sm:hidden"
+              className="h-9 w-auto max-w-[52px] object-contain sm:hidden"
             />
             <img
-              src="/kibs-logo-desktop.svg"
+              src="/kibs-logo-desktop.png"
               alt="Kibs Systems Ltd"
-              className="hidden h-12 w-auto max-w-[260px] object-contain sm:block lg:max-w-[310px]"
+              className="hidden h-14 w-auto max-w-[330px] object-contain sm:block lg:max-w-[390px]"
             />
           </div>
           <div className="hidden border-l border-slate-200 pl-3 sm:block">

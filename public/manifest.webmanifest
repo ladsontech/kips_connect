@@ -9,15 +9,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/kibs-logo-mobile.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/kibs-logo-mobile.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/kibs-logo-desktop.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/kibs-logo-desktop.png",
+      "sizes": "2048x868",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

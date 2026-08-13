@@ -1,10 +1,10 @@
-const CACHE_NAME = 'kibs-connect-v3';
+const CACHE_NAME = 'kibs-connect-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/kibs-logo-mobile.svg',
-  '/kibs-logo-desktop.svg',
+  '/kibs-logo-mobile.png',
+  '/kibs-logo-desktop.png',
 ];
 
 self.addEventListener('install', (event) => {
