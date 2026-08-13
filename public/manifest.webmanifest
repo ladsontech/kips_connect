@@ -1,0 +1,24 @@
+{
+  "name": "Kibs Connect",
+  "short_name": "Kibs",
+  "description": "Security installation and support field service management for Kibs Systems.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f9fb",
+  "theme_color": "#67c70f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/kibs-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/kibs-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
