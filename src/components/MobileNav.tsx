@@ -30,7 +30,7 @@ export function MobileNav<T extends string>({
   return (
     <>
       {/* Fixed Bottom Navigation Bar on Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 backdrop-blur-md px-2 py-1.5 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-1.5 py-1 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-md lg:hidden">
         {mainItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeId === item.id;
@@ -39,18 +39,18 @@ export function MobileNav<T extends string>({
               key={item.id}
               type="button"
               onClick={() => onChange(item.id)}
-              className={`flex flex-1 flex-col items-center justify-center py-1 text-center transition-all ${
+              className={`flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all ${
                 isActive ? 'text-kibs-deepGreen font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-xl transition ${
+                className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
                   isActive ? 'bg-kibs-green/15 text-kibs-deepGreen scale-105' : ''
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
               </div>
-              <span className="mt-0.5 text-[10px] tracking-tight">{item.label}</span>
+              <span className="mt-0.5 text-[9px] font-semibold tracking-tight">{item.label}</span>
             </button>
           );
         })}
@@ -60,22 +60,22 @@ export function MobileNav<T extends string>({
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className={`flex flex-1 flex-col items-center justify-center py-1 text-center transition-all ${
+            className={`flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all ${
               extraItems.some((item) => item.id === activeId)
                 ? 'text-kibs-deepGreen font-bold'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-xl transition ${
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
                 extraItems.some((item) => item.id === activeId)
                   ? 'bg-kibs-green/15 text-kibs-deepGreen'
                   : ''
               }`}
             >
-              <MoreHorizontal className="h-5 w-5" />
+              <MoreHorizontal className="h-4 w-4" />
             </div>
-            <span className="mt-0.5 text-[10px] tracking-tight">More</span>
+            <span className="mt-0.5 text-[9px] font-semibold tracking-tight">More</span>
           </button>
         )}
       </nav>
@@ -88,7 +88,7 @@ export function MobileNav<T extends string>({
             onClick={() => setDrawerOpen(false)}
             aria-label="Close menu"
           />
-          <div className="relative z-10 rounded-t-2xl border-t border-slate-200 bg-white p-5 shadow-2xl animate-slide-up">
+          <div className="relative z-10 rounded-t-2xl border-t border-slate-200 bg-white p-3 shadow-2xl animate-slide-up sm:p-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-extrabold text-slate-900">All Modules</h3>
               <button

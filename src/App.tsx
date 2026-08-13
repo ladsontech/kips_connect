@@ -129,7 +129,7 @@ const jobTypeLabels: Record<JobType, string> = {
 };
 
 const inputClass =
-  'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-kibs-deepGreen focus:ring-2 focus:ring-kibs-green/30';
+  'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-kibs-deepGreen focus:ring-2 focus:ring-kibs-green/30';
 const labelClass = 'text-xs font-bold uppercase tracking-wider text-slate-500';
 
 function App() {
@@ -506,7 +506,7 @@ function App() {
       />
 
       {/* Main Container */}
-      <div className="mx-auto flex max-w-7xl gap-6 px-3 py-4 sm:px-6 sm:py-6">
+      <div className="mx-auto flex max-w-7xl gap-4 px-2.5 py-3 sm:gap-6 sm:px-6 sm:py-6">
         {/* Desktop Sidebar Navigation for Manager */}
         {role === 'manager' && (
           <aside className="hidden w-60 shrink-0 lg:block">
@@ -568,7 +568,7 @@ function App() {
         )}
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1 pb-24 lg:pb-6 animate-fade-in">
+        <main className="min-w-0 flex-1 pb-20 lg:pb-6 animate-fade-in">
           {/* Client Presentation Banner */}
           <DemoBanner
             isSupabaseConfigured={isSupabaseConfigured}
@@ -858,7 +858,7 @@ function renderManagerView(args: {
           />
         </div>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="mt-4 grid gap-3 sm:gap-4 xl:grid-cols-[1.35fr_0.65fr]">
           <Panel title="Installations vs Support Trend" icon={TrendingUp}>
             <TrendChart data={monthlyTrend} />
           </Panel>
@@ -868,7 +868,7 @@ function renderManagerView(args: {
           </Panel>
         </div>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:gap-4 lg:grid-cols-3">
           <Panel title="Service Mix" icon={PieChart}>
             <HorizontalBars data={serviceMix} />
           </Panel>
@@ -895,7 +895,7 @@ function renderManagerView(args: {
           </Panel>
         </div>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="mt-4 grid gap-3 sm:gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <Panel title="Action Required / Dispatch Queue" icon={AlertTriangle}>
             <div className="space-y-3">
               {needsAttention.map((job) => (
@@ -1474,7 +1474,7 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4 sm:space-y-5">
+    <section className="space-y-3 sm:space-y-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-wider text-kibs-deepGreen">{eyebrow}</p>
@@ -1497,12 +1497,12 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
-      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+    <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs sm:space-y-4 sm:p-5">
+      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-2.5 sm:pb-3">
         <span className="rounded-lg bg-kibs-green/15 p-2 text-kibs-deepGreen">
           <Icon className="h-4 w-4" />
         </span>
-        <h2 className="text-base font-extrabold text-slate-950">{title}</h2>
+        <h2 className="text-sm font-extrabold text-slate-950 sm:text-base">{title}</h2>
       </div>
       {children}
     </section>
@@ -1523,13 +1523,13 @@ function MetricCard({
   tone: Tone;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs transition hover:border-slate-300 sm:p-4">
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-xs transition hover:border-slate-300 sm:p-4">
       <div className="flex items-start justify-between gap-3">
-        <span className={`rounded-xl p-2.5 ${toneClass(tone, 'soft')}`}>
-          <Icon className="h-5 w-5" />
+        <span className={`rounded-xl p-2 ${toneClass(tone, 'soft')} sm:p-2.5`}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs">{label}</p>
+      <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:mt-3 sm:text-xs">{label}</p>
       <p className="mt-0.5 text-lg font-black tracking-tight text-slate-950 sm:text-xl">{value}</p>
       <p className="mt-0.5 text-xs text-slate-500">{detail}</p>
     </article>
@@ -1559,20 +1559,20 @@ function TrendChart({
         </span>
       </div>
       <div className="overflow-x-auto pb-1">
-        <div className="flex min-w-[420px] items-end gap-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+        <div className="flex min-w-[360px] items-end gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 sm:min-w-[420px] sm:gap-4 sm:px-4 sm:py-4">
           {data.map((item) => (
             <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
-              <div className="flex h-32 items-end gap-1.5">
+              <div className="flex h-24 items-end gap-1.5 sm:h-32">
                 <div
-                  className="w-5 rounded-t-md bg-kibs-deepGreen shadow-sm"
+                  className="w-4 rounded-t-md bg-kibs-deepGreen shadow-sm sm:w-5"
                   style={{
-                    height: `${Math.max(12, (item.installations / maxValue) * 118)}px`,
+                    height: `${Math.max(10, (item.installations / maxValue) * 88)}px`,
                   }}
                   title={`${item.installations} installations`}
                 />
                 <div
-                  className="w-5 rounded-t-md bg-kibs-red shadow-sm"
-                  style={{ height: `${Math.max(12, (item.support / maxValue) * 118)}px` }}
+                  className="w-4 rounded-t-md bg-kibs-red shadow-sm sm:w-5"
+                  style={{ height: `${Math.max(10, (item.support / maxValue) * 88)}px` }}
                   title={`${item.support} support jobs`}
                 />
               </div>
@@ -1682,7 +1682,7 @@ function JobListItem({
 
   return (
     <button
-      className={`w-full rounded-2xl border p-4 text-left shadow-xs transition ${
+      className={`w-full rounded-2xl border p-3 text-left shadow-xs transition sm:p-4 ${
         selected
           ? 'border-kibs-deepGreen bg-emerald-50/30 ring-2 ring-kibs-green/20'
           : 'border-slate-200 bg-white hover:border-slate-300'

@@ -21,50 +21,50 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({
   return (
     <>
       {/* Top Demo Bar */}
-      <div className="mb-5 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-900 via-slate-900 to-emerald-950 p-4 text-white shadow-md">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kibs-green/20 text-kibs-green">
-              <Sparkles className="h-5 w-5 animate-pulse" />
+      <div className="mb-3 rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-900 via-slate-900 to-emerald-950 p-3 text-white shadow-md sm:mb-5 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5 sm:gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kibs-green/20 text-kibs-green sm:h-9 sm:w-9">
+              <Sparkles className="h-4 w-4 animate-pulse sm:h-5 sm:w-5" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-sm font-black tracking-wide text-white uppercase">Client Presentation Demo</h2>
-                <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-bold text-emerald-300 border border-emerald-500/30">
+                <h2 className="text-xs font-black uppercase tracking-wide text-white sm:text-sm">Client Presentation Demo</h2>
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 sm:text-[11px]">
                   {isSupabaseConfigured ? 'Supabase Live Connected' : 'Interactive Mock Mode'}
                 </span>
               </div>
-              <p className="mt-0.5 text-xs text-slate-300">
+              <p className="mt-0.5 hidden text-xs text-slate-300 sm:block">
                 Showcase real-time field ticketing, survey logs, technician updates & feedback loops to your client.
               </p>
             </div>
           </div>
 
           {/* Quick Demo Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             <button
               type="button"
               onClick={onSimulateTicket}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-500 shadow-xs"
+              className="flex min-h-8 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow-xs transition hover:bg-emerald-500 sm:px-3 sm:py-1.5 sm:text-xs"
             >
               <PlusCircle className="h-3.5 w-3.5" />
-              <span>+ Demo Support Ticket</span>
+              <span>Ticket</span>
             </button>
             <button
               type="button"
               onClick={onSimulateProgress}
-              className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 border border-slate-700 hover:bg-slate-700 transition"
+              className="flex min-h-8 items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-[10px] font-bold text-slate-200 transition hover:bg-slate-700 sm:px-3 sm:py-1.5 sm:text-xs"
             >
               <Zap className="h-3.5 w-3.5 text-amber-400" />
-              <span>Progress Field Job</span>
+              <span>Progress</span>
             </button>
             <button
               type="button"
               onClick={() => setDemoModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20 transition"
+              className="flex min-h-8 items-center justify-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[10px] font-bold text-white transition hover:bg-white/20 sm:px-3 sm:py-1.5 sm:text-xs"
             >
               <Database className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Supabase Integration</span>
+              <span>Backend</span>
             </button>
           </div>
         </div>
