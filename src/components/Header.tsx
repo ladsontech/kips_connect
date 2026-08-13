@@ -3,6 +3,7 @@ import {
   UserRound,
   UsersRound,
   Globe,
+  Handshake,
   Menu,
   X,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   const roleItems: { id: Role; label: string; icon: React.ElementType; sub: string }[] = [
     { id: 'manager', label: 'Manager', icon: UsersRound, sub: 'Admin Portal' },
     { id: 'technician', label: 'Technician', icon: UserRound, sub: 'Field App' },
+    { id: 'sales', label: 'Sales', icon: Handshake, sub: 'Pipeline' },
     { id: 'public', label: 'Client Portal', icon: Globe, sub: 'Support & Feedback' },
   ];
 
@@ -91,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Top Role Switcher (Visible when hamburger open or on smaller screens) */}
       <div className="border-t border-slate-100 bg-slate-50/90 px-2.5 py-1.5 md:hidden">
-        <div className="grid grid-cols-3 gap-1 rounded-lg border border-slate-200 bg-slate-200/60 p-1 text-xs">
+        <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-slate-200/60 p-1 text-xs">
           {roleItems.map((item) => {
             const Icon = item.icon;
             const active = role === item.id;

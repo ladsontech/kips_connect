@@ -1,4 +1,4 @@
-export type Role = 'manager' | 'technician' | 'public';
+export type Role = 'manager' | 'technician' | 'sales' | 'public';
 
 export type JobType = 'installation' | 'support' | 'maintenance';
 
@@ -62,6 +62,41 @@ export interface Technician {
   activeJobs: number;
   completedThisMonth: number;
   averageRating: number;
+}
+
+export type LeadStage =
+  | 'new'
+  | 'contacted'
+  | 'survey_booked'
+  | 'quoted'
+  | 'negotiation'
+  | 'won'
+  | 'lost';
+
+export interface SalesPerson {
+  id: string;
+  name: string;
+  phone: string;
+  territory: string;
+  monthlyTarget: number;
+}
+
+export interface Lead {
+  id: string;
+  leadNumber: string;
+  companyName: string;
+  contactPerson: string;
+  phone: string;
+  serviceInterest: ServiceType;
+  stage: LeadStage;
+  value: number;
+  probability: number;
+  source: string;
+  assignedSalesId: string;
+  nextAction: string;
+  nextActionDate: string;
+  notes: string;
+  createdAt: string;
 }
 
 export interface InstalledEquipment {

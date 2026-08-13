@@ -13,6 +13,7 @@ import {
   Clock3,
   FileText,
   Filter,
+  Handshake,
   Home,
   LayoutDashboard,
   ListChecks,
@@ -36,19 +37,23 @@ import {
   PieChart,
   TrendingUp,
   Trophy,
+  Target,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 import { Header } from './components/Header';
 import { MobileNav } from './components/MobileNav';
 import { JobModal } from './components/JobModal';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 
 import {
   clients,
   feedback as initialFeedback,
   installedEquipment,
   jobs,
+  leads,
   notifications as initialNotifications,
+  salesPeople,
   sites,
   surveys,
   technicians,
@@ -59,6 +64,8 @@ import type {
   Job,
   JobStatus,
   JobType,
+  Lead,
+  LeadStage,
   NotificationItem,
   Priority,
   Role,
@@ -70,12 +77,14 @@ type ManagerView =
   | 'clients'
   | 'sites'
   | 'jobs'
+  | 'sales'
   | 'technicians'
   | 'reports'
   | 'notifications'
   | 'settings';
 
 type TechnicianView = 'home' | 'my_jobs' | 'completed' | 'notifications' | 'profile';
+type SalesView = 'dashboard' | 'leads' | 'team';
 type PublicView = 'support' | 'feedback';
 type Tone = 'neutral' | 'success' | 'warning' | 'urgent' | 'info';
 
@@ -84,6 +93,7 @@ const managerNav: Array<{ id: ManagerView; label: string; icon: LucideIcon }> = 
   { id: 'clients', label: 'Clients', icon: UsersRound },
   { id: 'sites', label: 'Sites', icon: MapPinned },
   { id: 'jobs', label: 'Jobs', icon: BriefcaseBusiness },
+  { id: 'sales', label: 'Sales', icon: Handshake },
   { id: 'technicians', label: 'Technicians', icon: UserRound },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
   { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -96,6 +106,32 @@ const technicianNav: Array<{ id: TechnicianView; label: string; icon: LucideIcon
   { id: 'completed', label: 'Completed', icon: CheckCircle2 },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'profile', label: 'Profile', icon: UserRound },
+];
+
+const salesNav: Array<{ id: SalesView; label: string; icon: LucideIcon }> = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'leads', label: 'Leads', icon: Handshake },
+  { id: 'team', label: 'Team', icon: UsersRound },
+];
+
+const leadStageLabels: Record<LeadStage, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  survey_booked: 'Survey Booked',
+  quoted: 'Quoted',
+  negotiation: 'Negotiation',
+  won: 'Won',
+  lost: 'Lost',
+};
+
+const leadStageOrder: LeadStage[] = [
+  'new',
+  'contacted',
+  'survey_booked',
+  'quoted',
+  'negotiation',
+  'won',
+  'lost',
 ];
 
 const serviceTypes: ServiceType[] = [
@@ -134,6 +170,7 @@ function App() {
   const [role, setRole] = useState<Role>('manager');
   const [managerView, setManagerView] = useState<ManagerView>('dashboard');
   const [technicianView, setTechnicianView] = useState<TechnicianView>('home');
+  const [salesView, setSalesView] = useState<SalesView>('dashboard');
   const [publicView, setPublicView] = useState<PublicView>('support');
   
   const [jobsState, setJobsState] = useState<Job[]>(jobs);
@@ -498,6 +535,7 @@ function App() {
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />
+      <PwaInstallPrompt />
 
       {/* Main Container */}
       <div className="mx-auto flex max-w-7xl gap-4 px-2.5 py-3 sm:gap-6 sm:px-6 sm:py-6">
@@ -561,6 +599,35 @@ function App() {
           </aside>
         )}
 
+        {role === 'sales' && (
+          <aside className="hidden w-60 shrink-0 lg:block">
+            <div className="sticky top-20 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs space-y-1">
+              <p className="px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                Sales Portal
+              </p>
+              {salesNav.map((item) => {
+                const Icon = item.icon;
+                const active = salesView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSalesView(item.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
+                      active
+                        ? 'bg-kibs-green/15 text-kibs-deepGreen shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 ${active ? 'text-kibs-deepGreen' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        )}
+
         {/* Main Content Area */}
         <main className="min-w-0 flex-1 pb-20 lg:pb-6 animate-fade-in">
           {role === 'manager' &&
@@ -601,6 +668,11 @@ function App() {
               notificationsState,
             })}
 
+          {role === 'sales' &&
+            renderSalesView({
+              salesView,
+            })}
+
           {role === 'public' &&
             renderPublicView({
               publicView,
@@ -633,6 +705,14 @@ function App() {
           items={technicianNav}
           activeId={technicianView}
           onChange={(id) => setTechnicianView(id)}
+        />
+      )}
+      {role === 'sales' && (
+        <MobileNav
+          role={role}
+          items={salesNav}
+          activeId={salesView}
+          onChange={(id) => setSalesView(id)}
         />
       )}
 
@@ -1074,6 +1154,16 @@ function renderManagerView(args: {
     );
   }
 
+  if (managerView === 'sales') {
+    return (
+      <SalesWorkspace
+        title="Sales Pipeline"
+        eyebrow="Leads & Conversion"
+        showTeam
+      />
+    );
+  }
+
   if (managerView === 'technicians') {
     return (
       <SectionShell
@@ -1158,6 +1248,266 @@ function renderManagerView(args: {
   }
 
   return null;
+}
+
+function renderSalesView({ salesView }: { salesView: SalesView }) {
+  if (salesView === 'leads') {
+    return <SalesWorkspace title="My Lead Pipeline" eyebrow="Sales Follow-Up" focus="leads" />;
+  }
+
+  if (salesView === 'team') {
+    return <SalesWorkspace title="Sales Team" eyebrow="Targets & Performance" focus="team" showTeam />;
+  }
+
+  return <SalesWorkspace title="Sales Dashboard" eyebrow="Pipeline Overview" showTeam />;
+}
+
+function SalesWorkspace({
+  title,
+  eyebrow,
+  focus = 'dashboard',
+  showTeam = false,
+}: {
+  title: string;
+  eyebrow: string;
+  focus?: 'dashboard' | 'leads' | 'team';
+  showTeam?: boolean;
+}) {
+  const openLeads = leads.filter((lead) => !['won', 'lost'].includes(lead.stage));
+  const wonLeads = leads.filter((lead) => lead.stage === 'won');
+  const pipelineValue = openLeads.reduce((total, lead) => total + lead.value, 0);
+  const weightedValue = openLeads.reduce(
+    (total, lead) => total + lead.value * (lead.probability / 100),
+    0
+  );
+  const wonValue = wonLeads.reduce((total, lead) => total + lead.value, 0);
+  const nextActions = openLeads
+    .slice()
+    .sort((a, b) => a.nextActionDate.localeCompare(b.nextActionDate))
+    .slice(0, 4);
+  const stageData = leadStageOrder
+    .map((stage) => ({
+      label: leadStageLabels[stage],
+      value: leads.filter((lead) => lead.stage === stage).length,
+      tone: stage === 'won' ? 'success' : stage === 'lost' ? 'neutral' : stage === 'negotiation' ? 'warning' : 'info',
+    }))
+    .filter((item) => item.value > 0) as Array<{ label: string; value: number; tone: Tone }>;
+
+  return (
+    <SectionShell
+      title={title}
+      eyebrow={eyebrow}
+      action={<PrimaryButton icon={Plus}>+ New Lead</PrimaryButton>}
+    >
+      {focus !== 'leads' && (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <MetricCard
+              icon={Handshake}
+              label="Open Leads"
+              value={`${openLeads.length}`}
+              detail={`${leads.length} total records`}
+              tone="info"
+            />
+            <MetricCard
+              icon={Target}
+              label="Pipeline Value"
+              value={formatMoneyShort(pipelineValue)}
+              detail={`${formatMoneyShort(weightedValue)} weighted`}
+              tone="success"
+            />
+            <MetricCard
+              icon={TrendingUp}
+              label="Won Revenue"
+              value={formatMoneyShort(wonValue)}
+              detail={`${wonLeads.length} closed deals`}
+              tone="success"
+            />
+            <MetricCard
+              icon={Clock3}
+              label="Due Actions"
+              value={`${nextActions.length}`}
+              detail="Follow-ups scheduled"
+              tone="warning"
+            />
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+            <Panel title="Lead Maturity Stages" icon={PieChart}>
+              <HorizontalBars data={stageData} />
+            </Panel>
+            <Panel title="Priority Follow-Ups" icon={CalendarDays}>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {nextActions.map((lead) => (
+                  <LeadCard key={lead.id} lead={lead} compact />
+                ))}
+              </div>
+            </Panel>
+          </div>
+        </>
+      )}
+
+      {focus !== 'team' && (
+        <div className="mt-4">
+          <Panel title="Pipeline Board" icon={Handshake}>
+            <LeadPipelineBoard />
+          </Panel>
+        </div>
+      )}
+
+      {showTeam && (
+        <div className="mt-4">
+          <Panel title="Sales Personnel Dashboard" icon={UsersRound}>
+            <SalesPeopleDashboard />
+          </Panel>
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+function LeadPipelineBoard() {
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {leadStageOrder.map((stage) => {
+        const stageLeads = leads.filter((lead) => lead.stage === stage);
+
+        if (stageLeads.length === 0) {
+          return null;
+        }
+
+        return (
+          <section key={stage} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                {leadStageLabels[stage]}
+              </h3>
+              <StatusPill tone={stage === 'won' ? 'success' : stage === 'lost' ? 'neutral' : 'info'}>
+                {stageLeads.length}
+              </StatusPill>
+            </div>
+            <div className="space-y-2">
+              {stageLeads.map((lead) => (
+                <LeadCard key={lead.id} lead={lead} compact />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function LeadCard({ lead, compact = false }: { lead: Lead; compact?: boolean }) {
+  const salesPerson = getSalesPerson(lead.assignedSalesId);
+
+  return (
+    <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-wider text-kibs-deepGreen">
+            {lead.leadNumber} • {lead.source}
+          </p>
+          <h4 className="mt-1 truncate text-sm font-extrabold text-slate-950">
+            {lead.companyName}
+          </h4>
+          <p className="mt-0.5 truncate text-xs text-slate-500">{lead.contactPerson}</p>
+        </div>
+        <StatusPill tone={lead.stage === 'won' ? 'success' : lead.stage === 'lost' ? 'neutral' : 'warning'}>
+          {lead.probability}%
+        </StatusPill>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <MiniStat label="Value" value={formatMoneyShort(lead.value)} />
+        <MiniStat label="System" value={lead.serviceInterest} />
+      </div>
+      {!compact && (
+        <p className="mt-3 text-xs leading-relaxed text-slate-600">{lead.notes}</p>
+      )}
+      <div className="mt-3 rounded-lg bg-slate-50 p-2 text-xs">
+        <p className="font-bold text-slate-900">{lead.nextAction}</p>
+        <p className="mt-0.5 text-slate-500">
+          {formatDate(lead.nextActionDate)} • {salesPerson?.name}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function SalesPeopleDashboard() {
+  return (
+    <div className="grid gap-3 lg:grid-cols-3">
+      {salesPeople.map((person) => {
+        const personLeads = leads.filter((lead) => lead.assignedSalesId === person.id);
+        const stageCounts = {
+          new: personLeads.filter((lead) => ['new', 'contacted'].includes(lead.stage)).length,
+          survey: personLeads.filter((lead) => lead.stage === 'survey_booked').length,
+          quoted: personLeads.filter((lead) => ['quoted', 'negotiation'].includes(lead.stage)).length,
+          complete: personLeads.filter((lead) => lead.stage === 'won').length,
+        };
+        const openValue = personLeads
+          .filter((lead) => !['won', 'lost'].includes(lead.stage))
+          .reduce((total, lead) => total + lead.value, 0);
+        const wonValue = personLeads
+          .filter((lead) => lead.stage === 'won')
+          .reduce((total, lead) => total + lead.value, 0);
+        const targetProgress = Math.min(100, Math.round((wonValue / person.monthlyTarget) * 100));
+
+        return (
+          <article key={person.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kibs-green/15 text-sm font-black text-kibs-deepGreen sm:h-10 sm:w-10">
+                {person.name.charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-extrabold text-slate-950">{person.name}</h3>
+                <p className="truncate text-xs text-slate-500">{person.territory}</p>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg bg-slate-50 p-2">
+                <p className="font-bold uppercase text-slate-500">Open</p>
+                <p className="mt-0.5 font-black text-slate-950">{formatMoneyShort(openValue)}</p>
+              </div>
+              <div className="rounded-lg bg-emerald-50 p-2">
+                <p className="font-bold uppercase text-emerald-700">Won</p>
+                <p className="mt-0.5 font-black text-emerald-950">{formatMoneyShort(wonValue)}</p>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-4 gap-1.5">
+              <StageMiniCard label="New" value={stageCounts.new} tone="info" />
+              <StageMiniCard label="Survey" value={stageCounts.survey} tone="warning" />
+              <StageMiniCard label="Quoted" value={stageCounts.quoted} tone="urgent" />
+              <StageMiniCard label="Won" value={stageCounts.complete} tone="success" />
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-kibs-deepGreen" style={{ width: `${Math.max(4, targetProgress)}%` }} />
+            </div>
+            <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Target progress {targetProgress}%
+            </p>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function StageMiniCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: Tone;
+}) {
+  return (
+    <div className={`rounded-lg px-1.5 py-2 text-center ${toneClass(tone, 'soft')}`}>
+      <p className="text-base font-black leading-none">{value}</p>
+      <p className="mt-1 truncate text-[9px] font-black uppercase tracking-tight">{label}</p>
+    </div>
+  );
 }
 
 function renderTechnicianView(args: {
@@ -2075,6 +2425,18 @@ function getSite(id: string) {
 
 function getTechnician(id: string) {
   return technicians.find((technician) => technician.id === id);
+}
+
+function getSalesPerson(id: string) {
+  return salesPeople.find((person) => person.id === id);
+}
+
+function formatMoneyShort(value: number) {
+  if (value >= 1000000) {
+    return `UGX ${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}M`;
+  }
+
+  return `UGX ${Math.round(value / 1000)}K`;
 }
 
 function formatDate(value: string) {
