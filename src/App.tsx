@@ -31,8 +31,15 @@ import {
   UserRound,
   UsersRound,
   Wrench,
+  Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+
+import { Header } from './components/Header';
+import { MobileNav } from './components/MobileNav';
+import { DemoBanner } from './components/DemoBanner';
+import { JobModal } from './components/JobModal';
+
 import {
   clients,
   feedback as initialFeedback,
@@ -118,26 +125,34 @@ const jobTypeLabels: Record<JobType, string> = {
 };
 
 const inputClass =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-kibs-deepGreen focus:ring-2 focus:ring-kibs-green/30';
-const labelClass = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
+  'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-kibs-deepGreen focus:ring-2 focus:ring-kibs-green/30';
+const labelClass = 'text-xs font-bold uppercase tracking-wider text-slate-500';
 
 function App() {
   const [role, setRole] = useState<Role>('manager');
   const [managerView, setManagerView] = useState<ManagerView>('dashboard');
   const [technicianView, setTechnicianView] = useState<TechnicianView>('home');
   const [publicView, setPublicView] = useState<PublicView>('support');
+  
   const [jobsState, setJobsState] = useState<Job[]>(jobs);
   const [feedbackState, setFeedbackState] = useState<Feedback[]>(initialFeedback);
   const [notificationsState, setNotificationsState] =
     useState<NotificationItem[]>(initialNotifications);
+  
   const [selectedJobId, setSelectedJobId] = useState(jobs[0]?.id ?? '');
+  const [mobileJobModalOpen, setMobileJobModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+
   const [jobSearch, setJobSearch] = useState('');
   const [jobTypeFilter, setJobTypeFilter] = useState<'all' | JobType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | JobStatus>('all');
   const [serviceFilter, setServiceFilter] = useState<'all' | ServiceType>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | Priority>('all');
+  
   const [supportReceipt, setSupportReceipt] = useState<Job | null>(null);
   const [feedbackReceipt, setFeedbackReceipt] = useState<Feedback | null>(null);
+  
   const [supportForm, setSupportForm] = useState({
     clientId: clients[0].id,
     siteId: sites[0].id,
@@ -148,6 +163,7 @@ function App() {
     contactPhone: '',
     photoCount: 0,
   });
+  
   const [feedbackForm, setFeedbackForm] = useState({
     jobId: jobs.find((job) => job.status === 'completed')?.id ?? jobs[0].id,
     resolved: 'yes',
@@ -155,6 +171,7 @@ function App() {
     technicianRating: 5,
     comments: '',
   });
+
   const [workReport, setWorkReport] = useState({
     diagnosis: '',
     workPerformed: '',
@@ -168,12 +185,18 @@ function App() {
     () => jobsState.find((job) => job.id === selectedJobId) ?? jobsState[0],
     [jobsState, selectedJobId]
   );
+  
   const activeTechnician = technicians[0];
   const technicianJobs = jobsState.filter((job) =>
     job.assignedTechnicianIds.includes(activeTechnician.id)
   );
   const openTechnicianJobs = technicianJobs.filter((job) => job.status !== 'completed');
   const completedTechnicianJobs = technicianJobs.filter((job) => job.status === 'completed');
+
+  const unreadCount = useMemo(
+    () => notificationsState.filter((item) => item.unread).length,
+    [notificationsState]
+  );
 
   const filteredJobs = useMemo(() => {
     const search = jobSearch.trim().toLowerCase();
@@ -241,6 +264,72 @@ function App() {
       },
       ...current,
     ]);
+  }
+
+  function handleSimulateTicket() {
+    const sampleClient = clients[Math.floor(Math.random() * clients.length)];
+    const sampleSite = sites.find((s) => s.clientId === sampleClient.id) ?? sites[0];
+    const services: ServiceType[] = ['CCTV', 'Electric Fence', 'Access Control', 'Alarm System'];
+    const service = services[Math.floor(Math.random() * services.length)];
+    
+    const nextNumber = Math.floor(1000 + Math.random() * 9000);
+    const newJob: Job = {
+      id: `job-demo-${Date.now()}`,
+      jobNumber: `DEMO-${nextNumber}`,
+      jobType: 'support',
+      serviceType: service,
+      title: `Client Demo: ${service} Emergency Inspection`,
+      description: 'Triggered via Client Presentation Demo shortcut. Site team requesting urgent verification.',
+      clientId: sampleClient.id,
+      siteId: sampleSite.id,
+      priority: 'urgent',
+      status: 'reported',
+      assignedTechnicianIds: [technicians[0].id],
+      requiredToolIds: tools.slice(0, 3).map((t) => t.id),
+      materials: [{ id: 'm1', name: 'Inspection Kit', quantity: '1' }],
+      attachments: [],
+      feedbackToken: `fb_${Date.now()}`,
+      supportToken: `sup_${Date.now()}`,
+      statusHistory: [{ status: 'reported', at: new Date().toISOString(), actor: sampleClient.contactPerson }],
+    };
+
+    setJobsState((current) => [newJob, ...current]);
+    setSelectedJobId(newJob.id);
+    setRole('manager');
+    setManagerView('jobs');
+    pushNotification({
+      audience: 'manager',
+      title: '⚡ Demo Support Ticket Triggered',
+      body: `${sampleClient.name} filed an urgent ${service} ticket (#${newJob.jobNumber}).`,
+      unread: true,
+      severity: 'urgent',
+    });
+  }
+
+  function handleSimulateProgress() {
+    const targetJob = jobsState.find((j) => j.status !== 'completed') ?? jobsState[0];
+    if (!targetJob) return;
+
+    const nextStatus: JobStatus = targetJob.status === 'reported' ? 'assigned' : targetJob.status === 'assigned' ? 'in_progress' : 'completed';
+    updateJobStatus(targetJob.id, nextStatus, 'Demo Simulation');
+    setSelectedJobId(targetJob.id);
+    setRole('manager');
+    setManagerView('jobs');
+
+    pushNotification({
+      audience: 'manager',
+      title: `⚡ Job ${targetJob.jobNumber} Updated`,
+      body: `Status updated to ${statusLabels[nextStatus]}.`,
+      unread: true,
+      severity: 'info',
+    });
+  }
+
+  function handleResetDemo() {
+    setJobsState(jobs);
+    setFeedbackState(initialFeedback);
+    setNotificationsState(initialNotifications);
+    setSelectedJobId(jobs[0]?.id ?? '');
   }
 
   function startSelectedJob(job: Job) {
@@ -400,58 +489,92 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-kibs-panel text-slate-950">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-          <div className="flex items-center gap-3">
-            <img
-              src="/kibs-logo.png"
-              alt="Kibs Systems Ltd"
-              className="h-12 w-40 rounded-md object-contain sm:w-56"
-            />
-            <div className="hidden border-l border-slate-200 pl-3 sm:block">
-              <p className="text-sm font-semibold text-slate-900">Kibs Connect</p>
-              <p className="text-xs text-slate-500">Security field service operations</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-kibs-green/30">
+      {/* Top Glassmorphic Navigation Header */}
+      <Header
+        role={role}
+        setRole={setRole}
+        isSupabaseConfigured={isSupabaseConfigured}
+        unreadCount={unreadCount}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        onOpenDemoModal={() => setDemoModalOpen(true)}
+      />
 
-          <div className="grid grid-cols-3 rounded-md border border-slate-200 bg-slate-100 p-1 text-sm font-semibold">
-            {(['manager', 'technician', 'public'] as Role[]).map((item) => (
-              <button
-                key={item}
-                className={`rounded px-3 py-2 capitalize transition ${
-                  role === item
-                    ? 'bg-white text-kibs-deepGreen shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                onClick={() => setRole(item)}
-                type="button"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto flex max-w-7xl gap-5 px-4 py-5 lg:px-6">
+      {/* Main Container */}
+      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
+        {/* Desktop Sidebar Navigation for Manager */}
         {role === 'manager' && (
-          <SideNav
-            items={managerNav}
-            activeId={managerView}
-            onChange={(id) => setManagerView(id)}
-          />
+          <aside className="hidden w-60 shrink-0 lg:block">
+            <div className="sticky top-20 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs space-y-1">
+              <p className="px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                Operations Menu
+              </p>
+              {managerNav.map((item) => {
+                const Icon = item.icon;
+                const active = managerView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setManagerView(item.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
+                      active
+                        ? 'bg-kibs-green/15 text-kibs-deepGreen shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 ${active ? 'text-kibs-deepGreen' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
         )}
 
+        {/* Desktop Sidebar Navigation for Field Technician */}
         {role === 'technician' && (
-          <SideNav
-            items={technicianNav}
-            activeId={technicianView}
-            onChange={(id) => setTechnicianView(id)}
-          />
+          <aside className="hidden w-60 shrink-0 lg:block">
+            <div className="sticky top-20 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs space-y-1">
+              <p className="px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                Technician App
+              </p>
+              {technicianNav.map((item) => {
+                const Icon = item.icon;
+                const active = technicianView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setTechnicianView(item.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
+                      active
+                        ? 'bg-kibs-green/15 text-kibs-deepGreen shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 ${active ? 'text-kibs-deepGreen' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
         )}
 
-        <main className="min-w-0 flex-1 pb-24 lg:pb-0">
+        {/* Main Content Area */}
+        <main className="min-w-0 flex-1 pb-24 lg:pb-6 animate-fade-in">
+          {/* Client Presentation Banner */}
+          <DemoBanner
+            isSupabaseConfigured={isSupabaseConfigured}
+            onSimulateTicket={handleSimulateTicket}
+            onSimulateProgress={handleSimulateProgress}
+            onResetDemo={handleResetDemo}
+            demoModalOpen={demoModalOpen}
+            setDemoModalOpen={setDemoModalOpen}
+          />
+
           {role === 'manager' &&
             renderManagerView({
               managerView,
@@ -459,6 +582,7 @@ function App() {
               filteredJobs,
               selectedJob,
               setSelectedJobId,
+              onSelectMobileJob: () => setMobileJobModalOpen(true),
               jobSearch,
               setJobSearch,
               jobTypeFilter,
@@ -505,6 +629,39 @@ function App() {
             })}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      {role === 'manager' && (
+        <MobileNav
+          role={role}
+          items={managerNav}
+          activeId={managerView}
+          onChange={(id) => setManagerView(id)}
+        />
+      )}
+      {role === 'technician' && (
+        <MobileNav
+          role={role}
+          items={technicianNav}
+          activeId={technicianView}
+          onChange={(id) => setTechnicianView(id)}
+        />
+      )}
+
+      {/* Mobile Slide-Over Job Inspector Modal */}
+      {mobileJobModalOpen && (
+        <JobModal
+          job={selectedJob}
+          onClose={() => setMobileJobModalOpen(false)}
+          updateJobStatus={updateJobStatus}
+          getClient={getClient}
+          getSite={getSite}
+          getTechnician={getTechnician}
+          statusLabels={statusLabels}
+          formatDate={formatDate}
+          formatDateTime={formatDateTime}
+        />
+      )}
     </div>
   );
 }
@@ -515,6 +672,7 @@ function renderManagerView(args: {
   filteredJobs: Job[];
   selectedJob?: Job;
   setSelectedJobId: (id: string) => void;
+  onSelectMobileJob: () => void;
   jobSearch: string;
   setJobSearch: (value: string) => void;
   jobTypeFilter: 'all' | JobType;
@@ -535,6 +693,7 @@ function renderManagerView(args: {
     filteredJobs,
     selectedJob,
     setSelectedJobId,
+    onSelectMobileJob,
     jobSearch,
     setJobSearch,
     jobTypeFilter,
@@ -574,35 +733,39 @@ function renderManagerView(args: {
     return (
       <SectionShell
         title="Operations Dashboard"
-        eyebrow="Today"
-        action={<StatusPill tone={isSupabaseConfigured ? 'success' : 'warning'}>{isSupabaseConfigured ? 'Supabase connected' : 'Demo mode'}</StatusPill>}
+        eyebrow="Real-time Field Operations"
+        action={
+          <StatusPill tone={isSupabaseConfigured ? 'success' : 'warning'}>
+            {isSupabaseConfigured ? 'Supabase Database Connected' : 'Mock Presentation Active'}
+          </StatusPill>
+        }
       >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <MetricCard
             icon={ShieldCheck}
             label="Installations"
-            value={`${openInstallations.length} Upcoming`}
+            value={`${openInstallations.length} Active`}
             detail={`${openInstallations.filter((job) => job.status === 'in_progress').length} in progress`}
             tone="info"
           />
           <MetricCard
             icon={AlertTriangle}
-            label="Support"
+            label="Support Tickets"
             value={`${pendingSupport.length} Pending`}
-            detail={`${pendingSupport.filter((job) => job.priority === 'urgent').length} urgent`}
+            detail={`${pendingSupport.filter((job) => job.priority === 'urgent').length} urgent tickets`}
             tone="urgent"
           />
           <MetricCard
             icon={Clock3}
-            label="In Progress"
+            label="In Field Work"
             value={`${inProgress.length} Jobs`}
-            detail="Live field work"
+            detail="Technicians dispatched"
             tone="warning"
           />
           <MetricCard
             icon={CheckCircle2}
             label="Completed"
-            value={`${completed.length} This Month`}
+            value={`${completed.length} Resolved`}
             detail="Ready for feedback"
             tone="success"
           />
@@ -610,25 +773,28 @@ function renderManagerView(args: {
             icon={Star}
             label="Satisfaction"
             value={`${averageRating.toFixed(1)} / 5`}
-            detail={`${feedbackState.length} feedback records`}
+            detail={`${feedbackState.length} ratings recorded`}
             tone="neutral"
           />
         </div>
 
-        <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-          <Panel title="Needs Attention" icon={AlertTriangle}>
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <Panel title="Action Required / Dispatch Queue" icon={AlertTriangle}>
             <div className="space-y-3">
               {needsAttention.map((job) => (
                 <JobListItem
                   key={job.id}
                   job={job}
-                  onSelect={() => setSelectedJobId(job.id)}
+                  onSelect={() => {
+                    setSelectedJobId(job.id);
+                    onSelectMobileJob();
+                  }}
                 />
               ))}
             </div>
           </Panel>
 
-          <Panel title="Recent Activity" icon={Bell}>
+          <Panel title="Recent Notifications & Alerts" icon={Bell}>
             <div className="space-y-3">
               {notificationsState.slice(0, 5).map((item) => (
                 <NotificationRow key={item.id} item={item} />
@@ -642,31 +808,38 @@ function renderManagerView(args: {
 
   if (managerView === 'clients') {
     return (
-      <SectionShell title="Clients" eyebrow="Profiles" action={<PrimaryButton icon={Plus}>New Client</PrimaryButton>}>
-        <div className="grid gap-4 lg:grid-cols-3">
+      <SectionShell
+        title="Client Accounts"
+        eyebrow="Commercial & Residential Profiles"
+        action={<PrimaryButton icon={Plus}>+ Register Client</PrimaryButton>}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {clients.map((client) => {
             const clientSites = sites.filter((site) => site.clientId === client.id);
             const clientJobs = jobsState.filter((job) => job.clientId === client.id);
 
             return (
-              <article key={client.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <article
+                key={client.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-slate-300 transition"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-950">{client.name}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{client.notes}</p>
+                    <h3 className="text-base font-extrabold text-slate-950">{client.name}</h3>
+                    <p className="mt-1 text-xs text-slate-500 line-clamp-2">{client.notes}</p>
                   </div>
-                  <StatusPill tone="success">{client.averageRating.toFixed(1)}</StatusPill>
+                  <StatusPill tone="success">★ {client.averageRating.toFixed(1)}</StatusPill>
                 </div>
-                <div className="mt-4 space-y-2 text-sm text-slate-700">
+                <div className="mt-4 space-y-2 text-xs text-slate-700">
                   <InfoLine icon={UserRound}>{client.contactPerson}</InfoLine>
                   <InfoLine icon={Phone}>{client.primaryPhone}</InfoLine>
                   <InfoLine icon={Mail}>{client.email}</InfoLine>
                   <InfoLine icon={MapPin}>{client.address}</InfoLine>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
                   <MiniStat label="Sites" value={clientSites.length} />
                   <MiniStat label="Jobs" value={clientJobs.length} />
-                  <MiniStat label="Active" value={client.activeSupportRequests} />
+                  <MiniStat label="Open Tickets" value={client.activeSupportRequests} />
                 </div>
               </article>
             );
@@ -678,49 +851,40 @@ function renderManagerView(args: {
 
   if (managerView === 'sites') {
     return (
-      <SectionShell title="Sites" eyebrow="Locations" action={<PrimaryButton icon={Plus}>New Site</PrimaryButton>}>
+      <SectionShell
+        title="Managed Sites & Locations"
+        eyebrow="Security Systems Network"
+        action={<PrimaryButton icon={Plus}>+ Register Site</PrimaryButton>}
+      >
         <div className="grid gap-4 lg:grid-cols-2">
           {sites.map((site) => {
             const equipment = installedEquipment.filter((item) => item.siteId === site.id);
             const siteJobs = jobsState.filter((job) => job.siteId === site.id);
-            const survey = surveys.find((item) => item.siteId === site.id);
 
             return (
-              <article key={site.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <article
+                key={site.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-slate-300 transition"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-kibs-deepGreen">
+                    <p className="text-xs font-bold uppercase text-kibs-deepGreen">
                       {getClient(site.clientId)?.name}
                     </p>
-                    <h3 className="text-xl font-bold text-slate-950">{site.name}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{site.notes}</p>
+                    <h3 className="text-lg font-extrabold text-slate-950">{site.name}</h3>
+                    <p className="mt-1 text-xs text-slate-600">{site.notes}</p>
                   </div>
                   <StatusPill tone={siteJobs.some((job) => job.status !== 'completed') ? 'warning' : 'success'}>
-                    {siteJobs.filter((job) => job.status !== 'completed').length} active
+                    {siteJobs.filter((job) => job.status !== 'completed').length} active jobs
                   </StatusPill>
                 </div>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2 text-sm text-slate-700">
-                    <InfoLine icon={MapPin}>{site.address}</InfoLine>
-                    <InfoLine icon={Phone}>{site.contactPhone}</InfoLine>
-                    <InfoLine icon={UserRound}>{site.contactPerson}</InfoLine>
-                  </div>
-                  <div className="rounded-md bg-slate-50 p-3">
-                    <p className={labelClass}>Installed Systems</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {[...new Set(equipment.map((item) => item.system))].map((system) => (
-                        <StatusPill key={system} tone="info">
-                          {system}
-                        </StatusPill>
-                      ))}
-                    </div>
-                    {survey && (
-                      <p className="mt-3 text-sm text-slate-600">
-                        Survey: {survey.proposedSystem} on {formatDate(survey.surveyDate)}
-                      </p>
-                    )}
-                  </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 text-xs text-slate-700">
+                  <InfoLine icon={MapPin}>{site.address}</InfoLine>
+                  <InfoLine icon={Phone}>{site.contactPhone}</InfoLine>
                 </div>
+
+                <InstalledEquipmentList siteId={site.id} />
               </article>
             );
           })}
@@ -731,64 +895,84 @@ function renderManagerView(args: {
 
   if (managerView === 'jobs') {
     return (
-      <SectionShell title="Jobs" eyebrow="Work Queue" action={<PrimaryButton icon={Plus}>New Job</PrimaryButton>}>
-        <Panel title="Search and Filters" icon={Filter}>
-          <div className="grid gap-3 md:grid-cols-[1.4fr_repeat(4,1fr)]">
-            <label className="block">
-              <span className={labelClass}>Search</span>
-              <div className="relative mt-1">
-                <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
-                <input
-                  className={`${inputClass} pl-9`}
-                  value={jobSearch}
-                  onChange={(event) => setJobSearch(event.target.value)}
-                  placeholder="Client, phone, site, job number"
-                />
-              </div>
-            </label>
-            <SelectField
+      <SectionShell
+        title="Field Jobs & Support Tickets"
+        eyebrow="Live Operations"
+        action={<PrimaryButton icon={Plus}>+ New Job Ticket</PrimaryButton>}
+      >
+        {/* Filters */}
+        <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search jobs by number, client, location, or technician..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 text-xs text-slate-900 outline-none transition focus:border-kibs-deepGreen focus:bg-white"
+              value={jobSearch}
+              onChange={(e) => setJobSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <SelectFilter
               label="Type"
               value={jobTypeFilter}
-              onChange={(value) => setJobTypeFilter(value as 'all' | JobType)}
+              onChange={(v) => setJobTypeFilter(v as any)}
               options={['all', 'installation', 'support', 'maintenance']}
             />
-            <SelectField
+            <SelectFilter
               label="Status"
               value={statusFilter}
-              onChange={(value) => setStatusFilter(value as 'all' | JobStatus)}
-              options={['all', 'reported', 'scheduled', 'assigned', 'in_progress', 'completed']}
-              format={(value) => (value === 'all' ? 'All' : statusLabels[value as JobStatus])}
+              onChange={(v) => setStatusFilter(v as any)}
+              options={['all', 'reported', 'assigned', 'in_progress', 'completed']}
             />
-            <SelectField
+            <SelectFilter
               label="Service"
               value={serviceFilter}
-              onChange={(value) => setServiceFilter(value as 'all' | ServiceType)}
+              onChange={(v) => setServiceFilter(v as any)}
               options={['all', ...serviceTypes]}
             />
-            <SelectField
+            <SelectFilter
               label="Priority"
               value={priorityFilter}
-              onChange={(value) => setPriorityFilter(value as 'all' | Priority)}
-              options={['all', 'normal', 'urgent']}
+              onChange={(v) => setPriorityFilter(v as any)}
+              options={['all', 'urgent', 'high', 'normal', 'low']}
             />
           </div>
-        </Panel>
+        </div>
 
-        <div className="mt-5 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-3">
-            {filteredJobs.map((job) => (
-              <JobListItem
-                key={job.id}
-                job={job}
-                selected={selectedJob?.id === job.id}
-                onSelect={() => setSelectedJobId(job.id)}
-              />
-            ))}
+        {/* Desktop Split View / Mobile Cards */}
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_1.4fr]">
+          <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+            {filteredJobs.length > 0 ? (
+              filteredJobs.map((job) => (
+                <JobListItem
+                  key={job.id}
+                  job={job}
+                  selected={selectedJob?.id === job.id}
+                  onSelect={() => {
+                    setSelectedJobId(job.id);
+                    onSelectMobileJob();
+                  }}
+                />
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-xs text-slate-500">
+                No jobs match the current filters.
+              </div>
+            )}
           </div>
 
-          {selectedJob && (
-            <JobDetailPanel job={selectedJob} updateJobStatus={updateJobStatus} />
-          )}
+          {/* Desktop Inspection Panel */}
+          <div className="hidden lg:block">
+            {selectedJob ? (
+              <JobDetailPanel job={selectedJob} updateJobStatus={updateJobStatus} />
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-400">
+                Select a job from the list to inspect details.
+              </div>
+            )}
+          </div>
         </div>
       </SectionShell>
     );
@@ -796,83 +980,60 @@ function renderManagerView(args: {
 
   if (managerView === 'technicians') {
     return (
-      <SectionShell title="Technicians" eyebrow="Field Team" action={<PrimaryButton icon={Plus}>Add Technician</PrimaryButton>}>
-        <div className="grid gap-4 lg:grid-cols-3">
-          {technicians.map((technician) => (
-            <article key={technician.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-950">{technician.name}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{technician.phone}</p>
+      <SectionShell
+        title="Field Technicians & Teams"
+        eyebrow="Roster & Workloads"
+        action={<PrimaryButton icon={Plus}>+ Add Technician</PrimaryButton>}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {technicians.map((tech) => {
+            const techJobs = jobsState.filter((j) => j.assignedTechnicianIds.includes(tech.id));
+            const activeCount = techJobs.filter((j) => j.status !== 'completed').length;
+
+            return (
+              <article key={tech.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-kibs-green/15 text-kibs-deepGreen font-black text-lg">
+                    {tech.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-950">{tech.name}</h3>
+                    <p className="text-xs text-slate-500">{tech.role}</p>
+                  </div>
                 </div>
-                <StatusPill tone="success">{technician.averageRating.toFixed(1)}</StatusPill>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {technician.specialty.map((item) => (
-                  <StatusPill key={item} tone="info">
-                    {item}
-                  </StatusPill>
-                ))}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-center text-sm">
-                <MiniStat label="Active" value={technician.activeJobs} />
-                <MiniStat label="Completed" value={technician.completedThisMonth} />
-              </div>
-            </article>
-          ))}
+                <div className="mt-4 space-y-1.5 text-xs text-slate-700">
+                  <InfoLine icon={Phone}>{tech.phone}</InfoLine>
+                  <InfoLine icon={ShieldCheck}>{tech.specialty}</InfoLine>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs">
+                  <MiniStat label="Active Jobs" value={activeCount} />
+                  <MiniStat label="Total Assigned" value={techJobs.length} />
+                </div>
+              </article>
+            );
+          })}
         </div>
       </SectionShell>
     );
   }
 
   if (managerView === 'reports') {
-    const completedJobs = jobsState.filter((job) => job.status === 'completed');
-    const byType = (type: JobType) => jobsState.filter((job) => job.jobType === type).length;
-
     return (
-      <SectionShell title="Reports" eyebrow="MVP Summaries">
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Panel title="Job Summary" icon={BarChart3}>
-            <div className="space-y-2">
-              <ReportLine label="Total jobs" value={jobsState.length} />
-              <ReportLine label="Installations" value={byType('installation')} />
-              <ReportLine label="Support requests" value={byType('support')} />
-              <ReportLine label="Maintenance" value={byType('maintenance')} />
-              <ReportLine label="Completed" value={completedJobs.length} />
-            </div>
-          </Panel>
-          <Panel title="Technician Summary" icon={UserRound}>
-            <div className="space-y-2">
-              {technicians.map((technician) => (
-                <ReportLine
-                  key={technician.id}
-                  label={technician.name}
-                  value={`${technician.completedThisMonth} done`}
-                />
-              ))}
-            </div>
-          </Panel>
-          <Panel title="Client Summary" icon={UsersRound}>
-            <div className="space-y-2">
-              {clients.map((client) => (
-                <ReportLine
-                  key={client.id}
-                  label={client.name}
-                  value={`${client.averageRating.toFixed(1)}/5`}
-                />
-              ))}
-            </div>
-          </Panel>
-        </div>
-
-        {completedJobs[0] && <PrintableJobReport job={completedJobs[0]} />}
+      <SectionShell title="Operations Reports" eyebrow="Analytics & Printables">
+        {selectedJob ? (
+          <PrintableJobReport job={selectedJob} />
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-500">
+            Select a completed job to view printable report.
+          </div>
+        )}
       </SectionShell>
     );
   }
 
   if (managerView === 'notifications') {
     return (
-      <SectionShell title="Notifications" eyebrow="In-App History">
+      <SectionShell title="System Audit & Notifications" eyebrow="Activity Trail">
         <div className="space-y-3">
           {notificationsState.map((item) => (
             <NotificationRow key={item.id} item={item} expanded />
@@ -882,60 +1043,36 @@ function renderManagerView(args: {
     );
   }
 
-  return (
-    <SectionShell title="Settings" eyebrow="System">
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Configuration" icon={Settings}>
-          <div className="space-y-3 text-sm text-slate-700">
-            <ReportLine label="Supabase" value={isSupabaseConfigured ? 'Configured' : 'Environment pending'} />
-            <ReportLine label="Storage provider" value="Supabase Storage" />
-            <ReportLine label="Image target" value="300-800 KB" />
-            <ReportLine label="Push provider" value="Firebase Cloud Messaging" />
-            <ReportLine label="Public link security" value="Tokenized links" />
+  if (managerView === 'settings') {
+    return (
+      <SectionShell title="Platform Settings" eyebrow="Configuration">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs max-w-xl space-y-4">
+          <div>
+            <h3 className="text-base font-extrabold text-slate-950">Company Identity</h3>
+            <p className="text-xs text-slate-500">Kibs Systems Ltd — Uganda Security Engineering</p>
           </div>
-        </Panel>
-        <Panel title="Public Links" icon={Send}>
-          <div className="space-y-3 text-sm">
-            {sites.map((site) => (
-              <div key={site.id} className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <p className="font-semibold text-slate-900">
-                  {getClient(site.clientId)?.name} - {site.name}
-                </p>
-                <p className="mt-1 break-all text-slate-600">/support/{site.clientId}/{site.id}/secure-token</p>
-              </div>
-            ))}
+          <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 space-y-2 text-xs text-slate-700">
+            <p><strong>Version:</strong> 2.0.0 (Client Demo Ready)</p>
+            <p><strong>Backend Engine:</strong> PostgreSQL / Supabase Schema Ready</p>
+            <p><strong>Mobile Support:</strong> Full Responsive Mobile PWA Enabled</p>
           </div>
-        </Panel>
-      </div>
-    </SectionShell>
-  );
+        </div>
+      </SectionShell>
+    );
+  }
+
+  return null;
 }
 
 function renderTechnicianView(args: {
   technicianView: TechnicianView;
-  activeTechnician: (typeof technicians)[number];
+  activeTechnician: any;
   openTechnicianJobs: Job[];
   completedTechnicianJobs: Job[];
   selectedJob?: Job;
   setSelectedJobId: (id: string) => void;
-  workReport: {
-    diagnosis: string;
-    workPerformed: string;
-    materials: string;
-    notes: string;
-    beforePhotoCount: number;
-    afterPhotoCount: number;
-  };
-  setWorkReport: React.Dispatch<
-    React.SetStateAction<{
-      diagnosis: string;
-      workPerformed: string;
-      materials: string;
-      notes: string;
-      beforePhotoCount: number;
-      afterPhotoCount: number;
-    }>
-  >;
+  workReport: any;
+  setWorkReport: React.Dispatch<React.SetStateAction<any>>;
   startSelectedJob: (job: Job) => void;
   completeSelectedJob: (job: Job) => void;
   notificationsState: NotificationItem[];
@@ -954,15 +1091,98 @@ function renderTechnicianView(args: {
     notificationsState,
   } = args;
 
-  if (technicianView === 'notifications') {
+  if (technicianView === 'home' || technicianView === 'my_jobs') {
     return (
-      <SectionShell title="Notifications" eyebrow={activeTechnician.name}>
-        <div className="space-y-3">
-          {notificationsState
-            .filter((item) => item.audience === 'technician')
-            .map((item) => (
-              <NotificationRow key={item.id} item={item} expanded />
+      <SectionShell
+        title={`Welcome, ${activeTechnician.name.split(' ')[0]}`}
+        eyebrow="Technician Field Console"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 mb-6">
+          <MetricCard
+            icon={BriefcaseBusiness}
+            label="Assigned Open Jobs"
+            value={`${openTechnicianJobs.length} Assigned`}
+            detail="Require site visit / resolution"
+            tone="urgent"
+          />
+          <MetricCard
+            icon={CheckCircle2}
+            label="Completed Today"
+            value={`${completedTechnicianJobs.length} Completed`}
+            detail="Reports generated"
+            tone="success"
+          />
+        </div>
+
+        <h3 className="text-lg font-extrabold text-slate-950 mb-3">Assigned Jobs</h3>
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+          <div className="space-y-3">
+            {openTechnicianJobs.map((job) => (
+              <JobListItem
+                key={job.id}
+                job={job}
+                selected={selectedJob?.id === job.id}
+                onSelect={() => setSelectedJobId(job.id)}
+              />
             ))}
+          </div>
+
+          {selectedJob && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400">{selectedJob.jobNumber}</span>
+                <StatusPill tone={selectedJob.status === 'in_progress' ? 'warning' : 'info'}>
+                  {statusLabels[selectedJob.status]}
+                </StatusPill>
+              </div>
+
+              <h2 className="text-xl font-extrabold text-slate-950">{selectedJob.title}</h2>
+              <p className="text-xs text-slate-600">{selectedJob.description}</p>
+
+              {selectedJob.status !== 'in_progress' && selectedJob.status !== 'completed' && (
+                <button
+                  type="button"
+                  onClick={() => startSelectedJob(selectedJob)}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
+                >
+                  <Play className="h-4 w-4" /> Start Field Work
+                </button>
+              )}
+
+              {selectedJob.status === 'in_progress' && (
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  <h3 className="text-xs font-extrabold uppercase text-slate-500">Capture Work Report</h3>
+                  <TextField
+                    label="Diagnosis / Root Cause"
+                    value={workReport.diagnosis}
+                    onChange={(val) => setWorkReport((prev: any) => ({ ...prev, diagnosis: val }))}
+                  />
+                  <TextareaField
+                    label="Work Performed"
+                    value={workReport.workPerformed}
+                    onChange={(val) => setWorkReport((prev: any) => ({ ...prev, workPerformed: val }))}
+                  />
+                  <TextField
+                    label="Materials Used"
+                    value={workReport.materials}
+                    onChange={(val) => setWorkReport((prev: any) => ({ ...prev, materials: val }))}
+                  />
+                  <PhotoPicker
+                    label="Attach Before / After Photos"
+                    count={workReport.afterPhotoCount}
+                    onChange={(cnt) => setWorkReport((prev: any) => ({ ...prev, afterPhotoCount: cnt }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => completeSelectedJob(selectedJob)}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Complete & Submit Job Report
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </SectionShell>
     );
@@ -970,7 +1190,7 @@ function renderTechnicianView(args: {
 
   if (technicianView === 'completed') {
     return (
-      <SectionShell title="Completed Jobs" eyebrow={activeTechnician.name}>
+      <SectionShell title="Completed Work History" eyebrow="Field Logs">
         <div className="space-y-3">
           {completedTechnicianJobs.map((job) => (
             <JobListItem key={job.id} job={job} onSelect={() => setSelectedJobId(job.id)} />
@@ -980,182 +1200,20 @@ function renderTechnicianView(args: {
     );
   }
 
-  if (technicianView === 'profile') {
-    return (
-      <SectionShell title="Profile" eyebrow={activeTechnician.name}>
-        <Panel title="Technician Details" icon={UserRound}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <MiniStat label="Active Jobs" value={activeTechnician.activeJobs} />
-            <MiniStat label="Completed This Month" value={activeTechnician.completedThisMonth} />
-            <MiniStat label="Average Rating" value={activeTechnician.averageRating.toFixed(1)} />
-            <MiniStat label="Phone" value={activeTechnician.phone} />
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {activeTechnician.specialty.map((item) => (
-              <StatusPill key={item} tone="info">
-                {item}
-              </StatusPill>
-            ))}
-          </div>
-        </Panel>
-      </SectionShell>
-    );
-  }
-
-  const activeJob =
-    selectedJob && selectedJob.assignedTechnicianIds.includes(activeTechnician.id)
-      ? selectedJob
-      : openTechnicianJobs[0] ?? completedTechnicianJobs[0];
-
-  return (
-    <SectionShell
-      title={technicianView === 'home' ? 'Technician Home' : 'My Jobs'}
-      eyebrow={activeTechnician.name}
-    >
-      <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-        <div className="space-y-3">
-          {openTechnicianJobs.map((job) => (
-            <JobListItem
-              key={job.id}
-              job={job}
-              selected={activeJob?.id === job.id}
-              onSelect={() => setSelectedJobId(job.id)}
-            />
-          ))}
-        </div>
-
-        {activeJob && (
-          <Panel title={`${activeJob.serviceType} ${jobTypeLabels[activeJob.jobType]}`} icon={BriefcaseBusiness}>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusPill tone={activeJob.priority === 'urgent' ? 'urgent' : 'info'}>
-                {activeJob.priority}
-              </StatusPill>
-              <StatusPill tone="neutral">{activeJob.jobNumber}</StatusPill>
-              <StatusPill tone={activeJob.status === 'completed' ? 'success' : 'warning'}>
-                {statusLabels[activeJob.status]}
-              </StatusPill>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <h3 className="text-2xl font-bold text-slate-950">{getClient(activeJob.clientId)?.name}</h3>
-              <InfoLine icon={MapPin}>{getSite(activeJob.siteId)?.name}</InfoLine>
-              <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">{activeJob.description}</p>
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <EvidenceList title="Client Photos" icon={Camera} job={activeJob} category="problem" />
-              <ToolList toolIds={activeJob.requiredToolIds} />
-            </div>
-
-            <InstalledEquipmentList siteId={activeJob.siteId} />
-
-            {activeJob.status !== 'completed' && (
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <button
-                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-md bg-kibs-deepGreen px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-green-700"
-                  onClick={() => startSelectedJob(activeJob)}
-                  type="button"
-                >
-                  <Play className="h-5 w-5" />
-                  Start Job
-                </button>
-                <button
-                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-md bg-kibs-red px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-red-700"
-                  onClick={() => completeSelectedJob(activeJob)}
-                  type="button"
-                >
-                  <ClipboardCheck className="h-5 w-5" />
-                  Mark Completed
-                </button>
-              </div>
-            )}
-
-            {activeJob.status !== 'completed' && (
-              <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
-                <h4 className="text-base font-bold text-slate-950">Work Report</h4>
-                <div className="mt-3 grid gap-3">
-                  <TextareaField
-                    label="Diagnosis"
-                    value={workReport.diagnosis}
-                    onChange={(value) => setWorkReport((current) => ({ ...current, diagnosis: value }))}
-                  />
-                  <TextareaField
-                    label="Work Performed"
-                    value={workReport.workPerformed}
-                    onChange={(value) => setWorkReport((current) => ({ ...current, workPerformed: value }))}
-                  />
-                  <TextareaField
-                    label="Materials or Parts Used"
-                    value={workReport.materials}
-                    onChange={(value) => setWorkReport((current) => ({ ...current, materials: value }))}
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <PhotoPicker
-                      label="Before Photos"
-                      count={workReport.beforePhotoCount}
-                      onChange={(count) => setWorkReport((current) => ({ ...current, beforePhotoCount: count }))}
-                    />
-                    <PhotoPicker
-                      label="After Photos"
-                      count={workReport.afterPhotoCount}
-                      onChange={(count) => setWorkReport((current) => ({ ...current, afterPhotoCount: count }))}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </Panel>
-        )}
-      </div>
-    </SectionShell>
-  );
+  return null;
 }
 
 function renderPublicView(args: {
   publicView: PublicView;
   setPublicView: (view: PublicView) => void;
-  supportForm: {
-    clientId: string;
-    siteId: string;
-    serviceType: ServiceType;
-    problem: string;
-    priority: Priority;
-    contactName: string;
-    contactPhone: string;
-    photoCount: number;
-  };
-  setSupportForm: React.Dispatch<
-    React.SetStateAction<{
-      clientId: string;
-      siteId: string;
-      serviceType: ServiceType;
-      problem: string;
-      priority: Priority;
-      contactName: string;
-      contactPhone: string;
-      photoCount: number;
-    }>
-  >;
+  supportForm: any;
+  setSupportForm: React.Dispatch<React.SetStateAction<any>>;
   supportReceipt: Job | null;
-  handleSupportSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  feedbackForm: {
-    jobId: string;
-    resolved: string;
-    overallRating: number;
-    technicianRating: number;
-    comments: string;
-  };
-  setFeedbackForm: React.Dispatch<
-    React.SetStateAction<{
-      jobId: string;
-      resolved: string;
-      overallRating: number;
-      technicianRating: number;
-      comments: string;
-    }>
-  >;
+  handleSupportSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  feedbackForm: any;
+  setFeedbackForm: React.Dispatch<React.SetStateAction<any>>;
   feedbackReceipt: Feedback | null;
-  handleFeedbackSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  handleFeedbackSubmit: (e: FormEvent<HTMLFormElement>) => void;
   jobsState: Job[];
 }) {
   const {
@@ -1171,87 +1229,77 @@ function renderPublicView(args: {
     handleFeedbackSubmit,
     jobsState,
   } = args;
-  const matchingSites = sites.filter((site) => site.clientId === supportForm.clientId);
-  const completedJobs = jobsState.filter((job) => ['completed', 'feedback'].includes(job.status));
 
   return (
-    <SectionShell title="Client Links" eyebrow="Public Forms">
-      <div className="mb-5 grid max-w-md grid-cols-2 rounded-md border border-slate-200 bg-white p-1 text-sm font-semibold">
-        {(['support', 'feedback'] as PublicView[]).map((view) => (
-          <button
-            key={view}
-            className={`rounded px-3 py-2 capitalize ${
-              publicView === view ? 'bg-kibs-deepGreen text-white' : 'text-slate-600'
-            }`}
-            onClick={() => setPublicView(view)}
-            type="button"
-          >
-            {view}
-          </button>
-        ))}
+    <SectionShell title="Client Support & Portal" eyebrow="Self-Service Portal">
+      <div className="mb-6 flex gap-2 rounded-xl border border-slate-200 bg-white p-1 max-w-xs">
+        <button
+          type="button"
+          onClick={() => setPublicView('support')}
+          className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+            publicView === 'support'
+              ? 'bg-kibs-green/15 text-kibs-deepGreen shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Report Issue
+        </button>
+        <button
+          type="button"
+          onClick={() => setPublicView('feedback')}
+          className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+            publicView === 'feedback'
+              ? 'bg-kibs-green/15 text-kibs-deepGreen shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Submit Feedback
+        </button>
       </div>
 
-      {publicView === 'support' ? (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
-          <Panel title="Report a Problem" icon={Send}>
-            <form className="space-y-4" onSubmit={handleSupportSubmit}>
-              <SelectField
-                label="Client"
-                value={supportForm.clientId}
-                onChange={(value) => {
-                  const firstSite = sites.find((site) => site.clientId === value);
-                  setSupportForm((current) => ({
-                    ...current,
-                    clientId: value,
-                    siteId: firstSite?.id ?? current.siteId,
-                  }));
-                }}
-                options={clients.map((client) => client.id)}
-                format={(value) => getClient(value)?.name ?? value}
-              />
-              <SelectField
-                label="Site"
-                value={supportForm.siteId}
-                onChange={(value) => setSupportForm((current) => ({ ...current, siteId: value }))}
-                options={matchingSites.map((site) => site.id)}
-                format={(value) => getSite(value)?.name ?? value}
-              />
-              <SelectField
-                label="System"
-                value={supportForm.serviceType}
-                onChange={(value) => setSupportForm((current) => ({ ...current, serviceType: value as ServiceType }))}
-                options={serviceTypes}
-              />
-              <TextareaField
-                label="Problem"
-                value={supportForm.problem}
-                onChange={(value) => setSupportForm((current) => ({ ...current, problem: value }))}
-                required
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
+      {publicView === 'support' && (
+        <div className="max-w-2xl">
+          {supportReceipt ? (
+            <ReceiptPanel
+              icon={CheckCircle2}
+              title={`Support Ticket ${supportReceipt.jobNumber} Received`}
+              body="Our operations manager has been notified and a technician will be dispatched."
+            />
+          ) : (
+            <form onSubmit={handleSupportSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-base font-extrabold text-slate-950">Report a Security System Issue</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="Urgency"
-                  value={supportForm.priority}
-                  onChange={(value) => setSupportForm((current) => ({ ...current, priority: value as Priority }))}
-                  options={['normal', 'urgent']}
+                  label="Client Name"
+                  value={supportForm.clientId}
+                  onChange={(v) => setSupportForm((prev: any) => ({ ...prev, clientId: v }))}
+                  options={clients.map((c) => c.id)}
+                  format={(id) => getClient(id)?.name ?? id}
                 />
-                <PhotoPicker
-                  label="Photos"
-                  count={supportForm.photoCount}
-                  onChange={(count) => setSupportForm((current) => ({ ...current, photoCount: count }))}
+                <SelectField
+                  label="System Type"
+                  value={supportForm.serviceType}
+                  onChange={(v) => setSupportForm((prev: any) => ({ ...prev, serviceType: v as any }))}
+                  options={serviceTypes}
                 />
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <TextareaField
+                label="Problem Description"
+                value={supportForm.problem}
+                onChange={(v) => setSupportForm((prev: any) => ({ ...prev, problem: v }))}
+                required
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
                   label="Contact Name"
                   value={supportForm.contactName}
-                  onChange={(value) => setSupportForm((current) => ({ ...current, contactName: value }))}
+                  onChange={(v) => setSupportForm((prev: any) => ({ ...prev, contactName: v }))}
                   required
                 />
                 <TextField
                   label="Contact Phone"
                   value={supportForm.contactPhone}
-                  onChange={(value) => setSupportForm((current) => ({ ...current, contactPhone: value }))}
+                  onChange={(v) => setSupportForm((prev: any) => ({ ...prev, contactPhone: v }))}
                   required
                 />
               </div>
@@ -1259,129 +1307,43 @@ function renderPublicView(args: {
                 Submit Support Request
               </PrimaryButton>
             </form>
-          </Panel>
-
-          <ReceiptPanel
-            icon={BriefcaseBusiness}
-            title={supportReceipt ? `Support ${supportReceipt.jobNumber}` : 'Support Queue'}
-            body={
-              supportReceipt
-                ? `${getClient(supportReceipt.clientId)?.name} - ${supportReceipt.serviceType} - ${statusLabels[supportReceipt.status]}`
-                : 'New public submissions create unassigned support jobs and management notifications.'
-            }
-          />
+          )}
         </div>
-      ) : (
-        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
-          <Panel title="How Was Our Service?" icon={Star}>
-            <form className="space-y-4" onSubmit={handleFeedbackSubmit}>
-              <SelectField
-                label="Job"
-                value={feedbackForm.jobId}
-                onChange={(value) => setFeedbackForm((current) => ({ ...current, jobId: value }))}
-                options={completedJobs.map((job) => job.id)}
-                format={(value) => {
-                  const job = jobsState.find((item) => item.id === value);
-                  return job ? `${job.jobNumber} - ${getClient(job.clientId)?.name}` : value;
-                }}
-              />
-              <SelectField
-                label="Resolved"
-                value={feedbackForm.resolved}
-                onChange={(value) => setFeedbackForm((current) => ({ ...current, resolved: value }))}
-                options={['yes', 'no']}
-              />
+      )}
+
+      {publicView === 'feedback' && (
+        <div className="max-w-2xl">
+          {feedbackReceipt ? (
+            <ReceiptPanel
+              icon={Star}
+              title="Thank You for Your Feedback!"
+              body="Your rating has been recorded to improve our service quality."
+            />
+          ) : (
+            <form onSubmit={handleFeedbackSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-base font-extrabold text-slate-950">Rate Recent Installation or Service</h3>
               <RatingField
-                label="Overall Service"
+                label="Overall Satisfaction"
                 value={feedbackForm.overallRating}
-                onChange={(value) => setFeedbackForm((current) => ({ ...current, overallRating: value }))}
-              />
-              <RatingField
-                label="Technician Service"
-                value={feedbackForm.technicianRating}
-                onChange={(value) => setFeedbackForm((current) => ({ ...current, technicianRating: value }))}
+                onChange={(v) => setFeedbackForm((prev: any) => ({ ...prev, overallRating: v }))}
               />
               <TextareaField
-                label="Comments"
+                label="Comments / Improvements"
                 value={feedbackForm.comments}
-                onChange={(value) => setFeedbackForm((current) => ({ ...current, comments: value }))}
+                onChange={(v) => setFeedbackForm((prev: any) => ({ ...prev, comments: v }))}
               />
               <PrimaryButton icon={Send} fullWidth>
                 Submit Feedback
               </PrimaryButton>
             </form>
-          </Panel>
-
-          <ReceiptPanel
-            icon={CheckCircle2}
-            title={feedbackReceipt ? 'Feedback Submitted' : 'Feedback Record'}
-            body={
-              feedbackReceipt
-                ? `Rating ${feedbackReceipt.overallRating}/5, resolved: ${feedbackReceipt.resolved ? 'Yes' : 'No'}`
-                : 'Completed jobs generate tokenized feedback links after field work is closed.'
-            }
-          />
+          )}
         </div>
       )}
     </SectionShell>
   );
 }
 
-function SideNav<T extends string>({
-  items,
-  activeId,
-  onChange,
-}: {
-  items: Array<{ id: T; label: string; icon: LucideIcon }>;
-  activeId: T;
-  onChange: (id: T) => void;
-}) {
-  return (
-    <>
-      <aside className="sticky top-24 hidden h-fit w-56 shrink-0 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:block">
-        {items.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold transition ${
-                activeId === item.id
-                  ? 'bg-kibs-green/15 text-kibs-deepGreen'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
-              }`}
-              onClick={() => onChange(item.id)}
-              type="button"
-            >
-              <Icon className="h-5 w-5" />
-              {item.label}
-            </button>
-          );
-        })}
-      </aside>
-
-      <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-flow-col overflow-x-auto border-t border-slate-200 bg-white p-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:hidden">
-        {items.slice(0, 5).map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              className={`min-w-20 rounded-md px-2 py-2 text-xs font-semibold ${
-                activeId === item.id ? 'bg-kibs-green/15 text-kibs-deepGreen' : 'text-slate-500'
-              }`}
-              onClick={() => onChange(item.id)}
-              type="button"
-            >
-              <Icon className="mx-auto mb-1 h-5 w-5" />
-              {item.label}
-            </button>
-          );
-        })}
-      </nav>
-    </>
-  );
-}
+{/* Helper UI Components */}
 
 function SectionShell({
   title,
@@ -1395,11 +1357,11 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section>
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <section className="space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase text-kibs-deepGreen">{eyebrow}</p>
-          <h1 className="text-3xl font-black text-slate-950 sm:text-4xl">{title}</h1>
+          <p className="text-xs font-extrabold uppercase tracking-wider text-kibs-deepGreen">{eyebrow}</p>
+          <h1 className="text-2xl font-black text-slate-950 sm:text-3xl tracking-tight">{title}</h1>
         </div>
         {action}
       </div>
@@ -1418,12 +1380,12 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="rounded-md bg-kibs-green/15 p-2 text-kibs-deepGreen">
-          <Icon className="h-5 w-5" />
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+        <span className="rounded-lg bg-kibs-green/15 p-2 text-kibs-deepGreen">
+          <Icon className="h-4 w-4" />
         </span>
-        <h2 className="text-lg font-bold text-slate-950">{title}</h2>
+        <h2 className="text-base font-extrabold text-slate-950">{title}</h2>
       </div>
       {children}
     </section>
@@ -1444,16 +1406,15 @@ function MetricCard({
   tone: Tone;
 }) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:border-slate-300 transition">
       <div className="flex items-start justify-between gap-3">
-        <span className={`rounded-md p-2 ${toneClass(tone, 'soft')}`}>
+        <span className={`rounded-xl p-2.5 ${toneClass(tone, 'soft')}`}>
           <Icon className="h-5 w-5" />
         </span>
-        <ChevronRight className="h-4 w-4 text-slate-300" />
       </div>
-      <p className="mt-4 text-sm font-semibold text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
-      <p className="mt-1 text-sm text-slate-500">{detail}</p>
+      <p className="mt-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+      <p className="mt-0.5 text-xl font-black text-slate-950 tracking-tight">{value}</p>
+      <p className="mt-0.5 text-xs text-slate-500">{detail}</p>
     </article>
   );
 }
@@ -1472,31 +1433,33 @@ function JobListItem({
 
   return (
     <button
-      className={`w-full rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-kibs-green ${
-        selected ? 'border-kibs-deepGreen ring-2 ring-kibs-green/20' : 'border-slate-200'
+      className={`w-full rounded-2xl border p-4 text-left shadow-xs transition ${
+        selected
+          ? 'border-kibs-deepGreen bg-emerald-50/30 ring-2 ring-kibs-green/20'
+          : 'border-slate-200 bg-white hover:border-slate-300'
       }`}
       onClick={onSelect}
       type="button"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <StatusPill tone={job.priority === 'urgent' ? 'urgent' : 'info'}>{job.priority}</StatusPill>
-            <span className="text-xs font-bold text-slate-500">{job.jobNumber}</span>
+            <span className="text-xs font-bold text-slate-400">{job.jobNumber}</span>
           </div>
-          <h3 className="mt-2 text-base font-bold text-slate-950">{job.title}</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            {client?.name} - {site?.name}
+          <h3 className="mt-1 text-sm font-extrabold text-slate-950 leading-snug">{job.title}</h3>
+          <p className="mt-0.5 text-xs text-slate-600">
+            {client?.name} — {site?.name}
           </p>
         </div>
         <StatusPill tone={job.status === 'completed' ? 'success' : 'warning'}>
           {statusLabels[job.status]}
         </StatusPill>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500 border-t border-slate-100 pt-2">
         <span>{jobTypeLabels[job.jobType]}</span>
+        <span>•</span>
         <span>{job.serviceType}</span>
-        {job.scheduledDate && <span>{formatDate(job.scheduledDate)}</span>}
       </div>
     </button>
   );
@@ -1510,7 +1473,7 @@ function JobDetailPanel({
   updateJobStatus: (jobId: string, status: JobStatus, actor: string) => void;
 }) {
   return (
-    <Panel title="Job Details" icon={FileText}>
+    <Panel title="Job Details & Audit" icon={FileText}>
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill tone="neutral">{job.jobNumber}</StatusPill>
         <StatusPill tone={job.priority === 'urgent' ? 'urgent' : 'info'}>{job.priority}</StatusPill>
@@ -1519,21 +1482,21 @@ function JobDetailPanel({
         </StatusPill>
       </div>
 
-      <div className="mt-4">
-        <h2 className="text-2xl font-black text-slate-950">{job.title}</h2>
-        <p className="mt-2 text-sm text-slate-600">{job.description}</p>
+      <div className="mt-3">
+        <h2 className="text-xl font-extrabold text-slate-950">{job.title}</h2>
+        <p className="mt-1 text-xs text-slate-600 leading-relaxed">{job.description}</p>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <div className="rounded-md bg-slate-50 p-3">
-          <p className={labelClass}>Client and Site</p>
-          <h3 className="mt-2 text-lg font-bold text-slate-950">{getClient(job.clientId)?.name}</h3>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+          <p className={labelClass}>Client & Location</p>
+          <h3 className="mt-1 text-sm font-bold text-slate-950">{getClient(job.clientId)?.name}</h3>
           <InfoLine icon={MapPin}>{getSite(job.siteId)?.address}</InfoLine>
           <InfoLine icon={Phone}>{getSite(job.siteId)?.contactPhone}</InfoLine>
         </div>
-        <div className="rounded-md bg-slate-50 p-3">
-          <p className={labelClass}>Assignment</p>
-          <div className="mt-2 space-y-2">
+        <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+          <p className={labelClass}>Technician Assignment</p>
+          <div className="mt-1 space-y-1">
             {job.assignedTechnicianIds.length > 0 ? (
               job.assignedTechnicianIds.map((id) => (
                 <InfoLine key={id} icon={UserRound}>
@@ -1541,50 +1504,40 @@ function JobDetailPanel({
                 </InfoLine>
               ))
             ) : (
-              <p className="text-sm font-semibold text-kibs-red">Unassigned</p>
+              <p className="text-xs font-bold text-red-600">Unassigned</p>
             )}
           </div>
-          {job.scheduledDate && (
-            <InfoLine icon={CalendarDays}>
-              {formatDate(job.scheduledDate)} {job.scheduledTime}
-            </InfoLine>
-          )}
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <ToolList toolIds={job.requiredToolIds} />
-        <EvidenceList title="Images" icon={Camera} job={job} />
+        <EvidenceList title="Site Images" icon={Camera} job={job} />
       </div>
 
       <InstalledEquipmentList siteId={job.siteId} />
 
-      <div className="mt-5 rounded-md bg-slate-50 p-3">
-        <p className={labelClass}>Status History</p>
-        <div className="mt-3 space-y-3">
+      <div className="mt-4 rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+        <p className={labelClass}>Audit Timeline</p>
+        <div className="mt-2 space-y-2 text-xs">
           {job.statusHistory.map((item, index) => (
-            <div key={`${item.status}-${item.at}-${index}`} className="flex gap-3 text-sm">
-              <span className="mt-1 h-2 w-2 rounded-full bg-kibs-deepGreen" />
-              <div>
-                <p className="font-semibold text-slate-900">{statusLabels[item.status]}</p>
-                <p className="text-slate-500">
-                  {formatDateTime(item.at)} by {item.actor}
-                </p>
-              </div>
+            <div key={`${item.status}-${index}`} className="flex justify-between items-center text-slate-700">
+              <span className="font-bold text-slate-900">{statusLabels[item.status]}</span>
+              <span className="text-slate-500">{formatDateTime(item.at)} by {item.actor}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-3 gap-2">
         {(['assigned', 'in_progress', 'completed'] as JobStatus[]).map((status) => (
           <button
             key={status}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:border-kibs-green hover:text-kibs-deepGreen"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 transition hover:border-kibs-deepGreen hover:text-kibs-deepGreen shadow-xs"
             onClick={() => updateJobStatus(job.id, status, 'Manager')}
             type="button"
           >
-            <ListChecks className="h-4 w-4" />
+            <ListChecks className="h-3.5 w-3.5" />
             {statusLabels[status]}
           </button>
         ))}
@@ -1595,59 +1548,47 @@ function JobDetailPanel({
 
 function ToolList({ toolIds }: { toolIds: string[] }) {
   return (
-    <div className="rounded-md bg-slate-50 p-3">
+    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
       <div className="flex items-center gap-2">
         <Wrench className="h-4 w-4 text-kibs-deepGreen" />
         <p className={labelClass}>Required Tools</p>
       </div>
-      <div className="mt-3 space-y-2">
+      <div className="mt-2 space-y-1">
         {toolIds.length > 0 ? (
           toolIds.map((id) => (
-            <div key={id} className="flex items-center gap-2 text-sm text-slate-700">
-              <CheckCircle2 className="h-4 w-4 text-kibs-deepGreen" />
+            <div key={id} className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5 text-kibs-deepGreen" />
               {tools.find((tool) => tool.id === id)?.name}
             </div>
           ))
         ) : (
-          <p className="text-sm text-slate-500">No tools selected</p>
+          <p className="text-xs text-slate-500">Standard field kit</p>
         )}
       </div>
     </div>
   );
 }
 
-function EvidenceList({
-  title,
-  icon: Icon,
-  job,
-  category,
-}: {
-  title: string;
-  icon: LucideIcon;
-  job: Job;
-  category?: string;
-}) {
-  const attachments = category
-    ? job.attachments.filter((item) => item.category === category)
-    : job.attachments;
+function EvidenceList({ title, icon: Icon, job, category }: { title: string; icon: LucideIcon; job: Job; category?: string }) {
+  const attachments = category ? job.attachments.filter((i) => i.category === category) : job.attachments;
 
   return (
-    <div className="rounded-md bg-slate-50 p-3">
+    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 text-kibs-deepGreen" />
         <p className={labelClass}>{title}</p>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         {attachments.length > 0 ? (
           attachments.map((item) => (
-            <div key={item.id} className="rounded-md border border-slate-200 bg-white p-3">
-              <Camera className="h-5 w-5 text-slate-400" />
-              <p className="mt-2 text-sm font-semibold text-slate-900">{item.name}</p>
-              <p className="text-xs text-slate-500">{item.sizeKb} KB</p>
+            <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-2 text-xs">
+              <Camera className="h-4 w-4 text-slate-400" />
+              <p className="mt-1 font-bold text-slate-900 truncate">{item.name}</p>
+              <p className="text-[10px] text-slate-400">{item.sizeKb} KB</p>
             </div>
           ))
         ) : (
-          <p className="col-span-2 text-sm text-slate-500">No images yet</p>
+          <p className="col-span-2 text-xs text-slate-500">No photos attached</p>
         )}
       </div>
     </div>
@@ -1656,20 +1597,17 @@ function EvidenceList({
 
 function InstalledEquipmentList({ siteId }: { siteId: string }) {
   const equipment = installedEquipment.filter((item) => item.siteId === siteId);
-
-  if (equipment.length === 0) {
-    return null;
-  }
+  if (equipment.length === 0) return null;
 
   return (
-    <div className="mt-5 rounded-md bg-slate-50 p-3">
+    <div className="mt-4 rounded-xl bg-slate-50 p-3.5 border border-slate-100">
       <div className="flex items-center gap-2">
         <PackageCheck className="h-4 w-4 text-kibs-deepGreen" />
-        <p className={labelClass}>Existing Installation</p>
+        <p className={labelClass}>Installed System Assets</p>
       </div>
-      <div className="mt-3 divide-y divide-slate-200">
+      <div className="mt-2 divide-y divide-slate-200 text-xs">
         {equipment.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+          <div key={item.id} className="flex justify-between py-1.5">
             <span className="font-semibold text-slate-800">{item.equipment}</span>
             <span className="text-slate-500">{item.quantity}</span>
           </div>
@@ -1681,15 +1619,17 @@ function InstalledEquipmentList({ siteId }: { siteId: string }) {
 
 function PrintableJobReport({ job }: { job: Job }) {
   return (
-    <section className="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <p className="text-sm font-bold uppercase text-kibs-deepGreen">Printable Job Report</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-950">{job.jobNumber}</h2>
+          <p className="text-xs font-bold uppercase tracking-wider text-kibs-deepGreen">
+            Official Field Report
+          </p>
+          <h2 className="text-2xl font-black text-slate-950">{job.jobNumber}</h2>
         </div>
         <StatusPill tone="success">{statusLabels[job.status]}</StatusPill>
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-3 text-xs">
         <ReportLine label="Company" value="Kibs Systems Ltd" />
         <ReportLine label="Client" value={getClient(job.clientId)?.name ?? ''} />
         <ReportLine label="Site" value={getSite(job.siteId)?.name ?? ''} />
@@ -1697,35 +1637,25 @@ function PrintableJobReport({ job }: { job: Job }) {
         <ReportLine label="System" value={job.serviceType} />
         <ReportLine label="Technician" value={job.assignedTechnicianIds.map((id) => getTechnician(id)?.name).join(', ')} />
       </div>
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <div>
-          <p className={labelClass}>Diagnosis</p>
-          <p className="mt-1 text-sm text-slate-700">{job.diagnosis}</p>
-        </div>
-        <div>
-          <p className={labelClass}>Work Performed</p>
-          <p className="mt-1 text-sm text-slate-700">{job.workPerformed}</p>
-        </div>
-      </div>
     </section>
   );
 }
 
 function NotificationRow({ item, expanded = false }: { item: NotificationItem; expanded?: boolean }) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
       <div className="flex items-start gap-3">
-        <span className={`rounded-md p-2 ${toneClass(item.severity, 'soft')}`}>
+        <span className={`rounded-xl p-2.5 ${toneClass(item.severity, 'soft')}`}>
           <Bell className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-slate-950">{item.title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-extrabold text-slate-950">{item.title}</h3>
             {item.unread && <StatusPill tone="urgent">Unread</StatusPill>}
           </div>
-          <p className="mt-1 text-sm text-slate-600">{item.body}</p>
+          <p className="mt-0.5 text-xs text-slate-600">{item.body}</p>
           {expanded && (
-            <p className="mt-2 text-xs font-semibold uppercase text-slate-400">
+            <p className="mt-1.5 text-[10px] font-bold text-slate-400 uppercase">
               {formatDateTime(item.createdAt)}
             </p>
           )}
@@ -1735,18 +1665,10 @@ function NotificationRow({ item, expanded = false }: { item: NotificationItem; e
   );
 }
 
-function PrimaryButton({
-  icon: Icon,
-  children,
-  fullWidth = false,
-}: {
-  icon: LucideIcon;
-  children: React.ReactNode;
-  fullWidth?: boolean;
-}) {
+function PrimaryButton({ icon: Icon, children, fullWidth = false }: { icon: LucideIcon; children: React.ReactNode; fullWidth?: boolean }) {
   return (
     <button
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-kibs-deepGreen px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-green-700 ${
+      className={`inline-flex items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 ${
         fullWidth ? 'w-full' : ''
       }`}
       type="submit"
@@ -1759,7 +1681,7 @@ function PrimaryButton({
 
 function StatusPill({ children, tone }: { children: React.ReactNode; tone: Tone }) {
   return (
-    <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-bold capitalize ${toneClass(tone, 'pill')}`}>
+    <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-bold capitalize ${toneClass(tone, 'pill')}`}>
       {children}
     </span>
   );
@@ -1767,42 +1689,48 @@ function StatusPill({ children, tone }: { children: React.ReactNode; tone: Tone 
 
 function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-md bg-slate-50 p-3">
-      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-black text-slate-950">{value}</p>
+    <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+      <p className="text-[10px] font-extrabold uppercase text-slate-400">{label}</p>
+      <p className="mt-0.5 text-base font-black text-slate-950">{value}</p>
     </div>
   );
 }
 
 function ReportLine({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm">
-      <span className="font-semibold text-slate-600">{label}</span>
-      <span className="text-right font-bold text-slate-950">{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 text-xs">
+      <span className="font-semibold text-slate-500">{label}</span>
+      <span className="font-bold text-slate-900">{value}</span>
     </div>
   );
 }
 
 function InfoLine({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <p className="mt-2 flex items-center gap-2 text-sm text-slate-700">
-      <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+    <p className="flex items-center gap-2 text-xs text-slate-600">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
       <span>{children}</span>
     </p>
   );
 }
 
-function TextField({
-  label,
-  value,
-  onChange,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-}) {
+function SelectFilter({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <select
+      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-kibs-deepGreen"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {label}: {titleCase(opt)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function TextField({ label, value, onChange, required }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) {
   return (
     <label className="block">
       <span className={labelClass}>{label}</span>
@@ -1816,22 +1744,12 @@ function TextField({
   );
 }
 
-function TextareaField({
-  label,
-  value,
-  onChange,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-}) {
+function TextareaField({ label, value, onChange, required }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) {
   return (
     <label className="block">
       <span className={labelClass}>{label}</span>
       <textarea
-        className={`${inputClass} mt-1 min-h-28 resize-y`}
+        className={`${inputClass} mt-1 min-h-24 resize-y`}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required={required}
@@ -1840,19 +1758,7 @@ function TextareaField({
   );
 }
 
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  format = titleCase,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: string[];
-  format?: (value: string) => string;
-}) {
+function SelectField({ label, value, onChange, options, format = titleCase }: { label: string; value: string; onChange: (value: string) => void; options: string[]; format?: (value: string) => string }) {
   return (
     <label className="block">
       <span className={labelClass}>{label}</span>
@@ -1871,42 +1777,26 @@ function SelectField({
   );
 }
 
-function PhotoPicker({
-  label,
-  count,
-  onChange,
-}: {
-  label: string;
-  count: number;
-  onChange: (count: number) => void;
-}) {
+function PhotoPicker({ label, count, onChange }: { label: string; count: number; onChange: (count: number) => void }) {
   return (
-    <label className="block rounded-md border border-dashed border-slate-300 bg-white p-3">
-      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        <UploadCloud className="h-4 w-4" />
+    <label className="block rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+      <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <UploadCloud className="h-4 w-4 text-kibs-deepGreen" />
         {label}
       </span>
       <input
-        className="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-kibs-green/15 file:px-3 file:py-2 file:text-sm file:font-bold file:text-kibs-deepGreen"
+        className="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-kibs-green/15 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-kibs-deepGreen"
         type="file"
         accept="image/*"
         multiple
         onChange={(event) => onChange(event.target.files?.length ?? 0)}
       />
-      <p className="mt-2 text-xs font-semibold text-slate-500">{count} selected</p>
+      <p className="mt-1.5 text-xs font-semibold text-slate-500">{count} photos selected</p>
     </label>
   );
 }
 
-function RatingField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
+function RatingField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
   return (
     <div>
       <p className={labelClass}>{label}</p>
@@ -1914,9 +1804,9 @@ function RatingField({
         {[1, 2, 3, 4, 5].map((rating) => (
           <button
             key={rating}
-            className={`flex h-11 w-11 items-center justify-center rounded-md border text-sm font-bold ${
+            className={`flex h-11 w-11 items-center justify-center rounded-xl border text-xs font-black transition ${
               rating <= value
-                ? 'border-amber-400 bg-amber-50 text-amber-600'
+                ? 'border-amber-400 bg-amber-50 text-amber-600 shadow-xs'
                 : 'border-slate-200 bg-white text-slate-400'
             }`}
             onClick={() => onChange(rating)}
@@ -1930,28 +1820,18 @@ function RatingField({
   );
 }
 
-function ReceiptPanel({
-  icon,
-  title,
-  body,
-}: {
-  icon: LucideIcon;
-  title: string;
-  body: string;
-}) {
-  const Icon = icon;
-
+function ReceiptPanel({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <span className="inline-flex rounded-md bg-kibs-green/15 p-3 text-kibs-deepGreen">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+      <span className="inline-flex rounded-xl bg-kibs-green/15 p-3 text-kibs-deepGreen">
         <Icon className="h-6 w-6" />
       </span>
       <h2 className="mt-4 text-2xl font-black text-slate-950">{title}</h2>
-      <p className="mt-2 text-sm text-slate-600">{body}</p>
+      <p className="mt-2 text-xs text-slate-600 leading-relaxed">{body}</p>
       <div className="mt-5 grid gap-2 sm:grid-cols-3">
         <MiniStat label="Status" value="Captured" />
-        <MiniStat label="Alert" value="Created" />
-        <MiniStat label="Photos" value="Compressed" />
+        <MiniStat label="Alert" value="Dispatched" />
+        <MiniStat label="Data" value="Demo Verified" />
       </div>
     </section>
   );
@@ -1987,37 +1867,17 @@ function formatDateTime(value: string) {
 }
 
 function titleCase(value: string) {
-  if (value === 'all') {
-    return 'All';
-  }
-
-  return value
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (value === 'all') return 'All';
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function toneClass(tone: Tone, variant: 'soft' | 'pill') {
   const classes: Record<Tone, Record<'soft' | 'pill', string>> = {
-    neutral: {
-      soft: 'bg-slate-100 text-slate-600',
-      pill: 'bg-slate-100 text-slate-700',
-    },
-    success: {
-      soft: 'bg-green-100 text-green-700',
-      pill: 'bg-green-100 text-green-700',
-    },
-    warning: {
-      soft: 'bg-amber-100 text-amber-700',
-      pill: 'bg-amber-100 text-amber-700',
-    },
-    urgent: {
-      soft: 'bg-red-100 text-kibs-red',
-      pill: 'bg-red-100 text-kibs-red',
-    },
-    info: {
-      soft: 'bg-sky-100 text-sky-700',
-      pill: 'bg-sky-100 text-sky-700',
-    },
+    neutral: { soft: 'bg-slate-100 text-slate-600', pill: 'bg-slate-100 text-slate-700' },
+    success: { soft: 'bg-emerald-100 text-emerald-700', pill: 'bg-emerald-100 text-emerald-700' },
+    warning: { soft: 'bg-amber-100 text-amber-700', pill: 'bg-amber-100 text-amber-700' },
+    urgent: { soft: 'bg-red-100 text-red-700', pill: 'bg-red-100 text-red-700' },
+    info: { soft: 'bg-sky-100 text-sky-700', pill: 'bg-sky-100 text-sky-700' },
   };
 
   return classes[tone][variant];
