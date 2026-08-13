@@ -41,14 +41,14 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs transition-all">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2 sm:px-6 sm:py-3">
         {/* Brand & Title */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
               src="/kibs-logo.png"
               alt="Kibs Systems Ltd"
-              className="h-8 w-auto max-w-[126px] object-contain sm:h-11 sm:max-w-[200px]"
+              className="h-7 w-auto max-w-[118px] object-contain sm:h-11 sm:max-w-[200px]"
             />
           </div>
           <div className="hidden border-l border-slate-200 pl-3 sm:block">
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Mobile Top Role Switcher (Visible when hamburger open or on smaller screens) */}
-      <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2 md:hidden">
+      <div className="border-t border-slate-100 bg-slate-50/90 px-2.5 py-1.5 md:hidden">
         <div className="grid grid-cols-3 gap-1 rounded-lg border border-slate-200 bg-slate-200/60 p-1 text-xs">
           {roleItems.map((item) => {
             const Icon = item.icon;
@@ -137,14 +137,14 @@ export const Header: React.FC<HeaderProps> = ({
                   setRole(item.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center gap-0.5 rounded-md py-1.5 font-bold transition ${
+                className={`flex flex-col items-center justify-center gap-0.5 rounded-md py-1 font-bold transition ${
                   active
                     ? 'bg-white text-kibs-deepGreen shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="text-[11px] truncate max-w-full">{item.label}</span>
+                <Icon className="h-3 w-3" />
+                <span className="max-w-full truncate text-[10px]">{item.label}</span>
               </button>
             );
           })}
