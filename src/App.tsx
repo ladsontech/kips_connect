@@ -1,6 +1,7 @@
 import React, { FormEvent, useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  Activity,
   BarChart3,
   Bell,
   BriefcaseBusiness,
@@ -32,6 +33,9 @@ import {
   UsersRound,
   Wrench,
   Sparkles,
+  PieChart,
+  TrendingUp,
+  Trophy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -502,7 +506,7 @@ function App() {
       />
 
       {/* Main Container */}
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6">
+      <div className="mx-auto flex max-w-7xl gap-6 px-3 py-4 sm:px-6 sm:py-6">
         {/* Desktop Sidebar Navigation for Manager */}
         {role === 'manager' && (
           <aside className="hidden w-60 shrink-0 lg:block">
@@ -718,6 +722,15 @@ function renderManagerView(args: {
     );
     const inProgress = jobsState.filter((job) => job.status === 'in_progress');
     const completed = jobsState.filter((job) => job.status === 'completed');
+    const totalInstallations = jobsState.filter((job) => job.jobType === 'installation').length;
+    const totalSupport = jobsState.filter((job) => job.jobType === 'support').length;
+    const totalMaintenance = jobsState.filter((job) => job.jobType === 'maintenance').length;
+    const completionRate =
+      jobsState.length > 0 ? Math.round((completed.length / jobsState.length) * 100) : 0;
+    const urgentOpen = jobsState.filter(
+      (job) => job.priority === 'urgent' && !['completed', 'feedback'].includes(job.status)
+    ).length;
+    const evidencePhotos = jobsState.reduce((total, job) => total + job.attachments.length, 0);
     const averageRating =
       feedbackState.length > 0
         ? feedbackState.reduce((total, item) => total + item.overallRating, 0) /
@@ -729,6 +742,66 @@ function renderManagerView(args: {
         job.assignedTechnicianIds.length === 0 ||
         job.status === 'reported'
     );
+    const topInstallers = technicians
+      .map((technician) => {
+        const assignedJobs = jobsState.filter((job) =>
+          job.assignedTechnicianIds.includes(technician.id)
+        );
+        const installationJobs = assignedJobs.filter((job) => job.jobType === 'installation');
+        const completedAssigned = assignedJobs.filter((job) =>
+          ['completed', 'feedback'].includes(job.status)
+        );
+
+        return {
+          id: technician.id,
+          name: technician.name,
+          specialty: technician.specialty.join(', '),
+          completedThisMonth: technician.completedThisMonth,
+          installations: installationJobs.length,
+          activeJobs: assignedJobs.filter((job) => job.status !== 'completed').length,
+          completionRate:
+            assignedJobs.length > 0
+              ? Math.round((completedAssigned.length / assignedJobs.length) * 100)
+              : 0,
+          rating: technician.averageRating,
+        };
+      })
+      .sort((a, b) => b.completedThisMonth - a.completedThisMonth);
+    const serviceMix: Array<{ label: string; value: number; tone: Tone }> = serviceTypes
+      .map((service) => ({
+        label: service,
+        value: jobsState.filter((job) => job.serviceType === service).length,
+        tone: (service === 'CCTV'
+          ? 'info'
+          : service === 'Flood Lights'
+            ? 'warning'
+            : 'success') as Tone,
+      }))
+      .filter((item) => item.value > 0);
+    const statusMix: Array<{ label: string; value: number; tone: Tone }> = ([
+      'reported',
+      'scheduled',
+      'assigned',
+      'in_progress',
+      'completed',
+    ] as JobStatus[])
+      .map((status) => ({
+        label: statusLabels[status],
+        value: jobsState.filter((job) => job.status === status).length,
+        tone: (status === 'completed'
+          ? 'success'
+          : status === 'in_progress'
+            ? 'warning'
+            : 'info') as Tone,
+      }))
+      .filter((item) => item.value > 0);
+    const monthlyTrend = [
+      { label: 'Apr', installations: 5, support: 7 },
+      { label: 'May', installations: 7, support: 8 },
+      { label: 'Jun', installations: 6, support: 11 },
+      { label: 'Jul', installations: 8, support: 10 },
+      { label: 'Aug', installations: Math.max(totalInstallations + 5, 6), support: Math.max(totalSupport + 7, 8) },
+    ];
 
     return (
       <SectionShell
@@ -740,19 +813,19 @@ function renderManagerView(args: {
           </StatusPill>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
           <MetricCard
             icon={ShieldCheck}
-            label="Installations"
-            value={`${openInstallations.length} Active`}
-            detail={`${openInstallations.filter((job) => job.status === 'in_progress').length} in progress`}
+            label="Total Installations"
+            value={`${totalInstallations}`}
+            detail={`${openInstallations.length} active pipeline`}
             tone="info"
           />
           <MetricCard
             icon={AlertTriangle}
-            label="Support Tickets"
-            value={`${pendingSupport.length} Pending`}
-            detail={`${pendingSupport.filter((job) => job.priority === 'urgent').length} urgent tickets`}
+            label="Total Support"
+            value={`${totalSupport}`}
+            detail={`${pendingSupport.length} still pending`}
             tone="urgent"
           />
           <MetricCard
@@ -764,9 +837,9 @@ function renderManagerView(args: {
           />
           <MetricCard
             icon={CheckCircle2}
-            label="Completed"
-            value={`${completed.length} Resolved`}
-            detail="Ready for feedback"
+            label="Completion Rate"
+            value={`${completionRate}%`}
+            detail={`${completed.length} resolved jobs`}
             tone="success"
           />
           <MetricCard
@@ -776,9 +849,53 @@ function renderManagerView(args: {
             detail={`${feedbackState.length} ratings recorded`}
             tone="neutral"
           />
+          <MetricCard
+            icon={PackageCheck}
+            label="Installed Assets"
+            value={`${installedEquipment.length}`}
+            detail={`${totalMaintenance} maintenance plan`}
+            tone="success"
+          />
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="mt-5 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+          <Panel title="Installations vs Support Trend" icon={TrendingUp}>
+            <TrendChart data={monthlyTrend} />
+          </Panel>
+
+          <Panel title="Top Installers" icon={Trophy}>
+            <TopInstallers installers={topInstallers} />
+          </Panel>
+        </div>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          <Panel title="Service Mix" icon={PieChart}>
+            <HorizontalBars data={serviceMix} />
+          </Panel>
+
+          <Panel title="Job Status Mix" icon={Activity}>
+            <HorizontalBars data={statusMix} />
+          </Panel>
+
+          <Panel title="Operational Health" icon={Sparkles}>
+            <div className="grid grid-cols-2 gap-2">
+              <MiniStat label="Urgent Open" value={urgentOpen} />
+              <MiniStat label="Sites Covered" value={sites.length} />
+              <MiniStat label="Evidence Photos" value={evidencePhotos} />
+              <MiniStat label="Avg Response" value="3.2h" />
+            </div>
+            <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                Client-ready insight
+              </p>
+              <p className="mt-1 text-sm font-semibold leading-relaxed text-emerald-950">
+                Field activity is healthy: installers are assigned, photo evidence is flowing, and urgent support is visible to management.
+              </p>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <Panel title="Action Required / Dispatch Queue" icon={AlertTriangle}>
             <div className="space-y-3">
               {needsAttention.map((job) => (
@@ -998,7 +1115,7 @@ function renderManagerView(args: {
                   </div>
                   <div>
                     <h3 className="font-extrabold text-slate-950">{tech.name}</h3>
-                    <p className="text-xs text-slate-500">{tech.role}</p>
+                    <p className="text-xs text-slate-500">{tech.specialty.join(', ')}</p>
                   </div>
                 </div>
                 <div className="mt-4 space-y-1.5 text-xs text-slate-700">
@@ -1046,7 +1163,7 @@ function renderManagerView(args: {
   if (managerView === 'settings') {
     return (
       <SectionShell title="Platform Settings" eyebrow="Configuration">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs max-w-xl space-y-4">
+        <div className="max-w-xl space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
           <div>
             <h3 className="text-base font-extrabold text-slate-950">Company Identity</h3>
             <p className="text-xs text-slate-500">Kibs Systems Ltd — Uganda Security Engineering</p>
@@ -1266,7 +1383,7 @@ function renderPublicView(args: {
               body="Our operations manager has been notified and a technician will be dispatched."
             />
           ) : (
-            <form onSubmit={handleSupportSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+            <form onSubmit={handleSupportSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
               <h3 className="text-base font-extrabold text-slate-950">Report a Security System Issue</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
@@ -1320,7 +1437,7 @@ function renderPublicView(args: {
               body="Your rating has been recorded to improve our service quality."
             />
           ) : (
-            <form onSubmit={handleFeedbackSubmit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+            <form onSubmit={handleFeedbackSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
               <h3 className="text-base font-extrabold text-slate-950">Rate Recent Installation or Service</h3>
               <RatingField
                 label="Overall Satisfaction"
@@ -1357,11 +1474,11 @@ function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 sm:space-y-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-wider text-kibs-deepGreen">{eyebrow}</p>
-          <h1 className="text-2xl font-black text-slate-950 sm:text-3xl tracking-tight">{title}</h1>
+          <h1 className="text-xl font-black tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
         </div>
         {action}
       </div>
@@ -1380,7 +1497,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
       <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
         <span className="rounded-lg bg-kibs-green/15 p-2 text-kibs-deepGreen">
           <Icon className="h-4 w-4" />
@@ -1406,16 +1523,148 @@ function MetricCard({
   tone: Tone;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:border-slate-300 transition">
+    <article className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs transition hover:border-slate-300 sm:p-4">
       <div className="flex items-start justify-between gap-3">
         <span className={`rounded-xl p-2.5 ${toneClass(tone, 'soft')}`}>
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      <p className="mt-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
-      <p className="mt-0.5 text-xl font-black text-slate-950 tracking-tight">{value}</p>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs">{label}</p>
+      <p className="mt-0.5 text-lg font-black tracking-tight text-slate-950 sm:text-xl">{value}</p>
       <p className="mt-0.5 text-xs text-slate-500">{detail}</p>
     </article>
+  );
+}
+
+function TrendChart({
+  data,
+}: {
+  data: Array<{ label: string; installations: number; support: number }>;
+}) {
+  const maxValue = Math.max(
+    1,
+    ...data.flatMap((item) => [item.installations, item.support])
+  );
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-3 text-xs font-bold text-slate-600">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-kibs-deepGreen" />
+          Installations
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-kibs-red" />
+          Support
+        </span>
+      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-[420px] items-end gap-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+          {data.map((item) => (
+            <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
+              <div className="flex h-32 items-end gap-1.5">
+                <div
+                  className="w-5 rounded-t-md bg-kibs-deepGreen shadow-sm"
+                  style={{
+                    height: `${Math.max(12, (item.installations / maxValue) * 118)}px`,
+                  }}
+                  title={`${item.installations} installations`}
+                />
+                <div
+                  className="w-5 rounded-t-md bg-kibs-red shadow-sm"
+                  style={{ height: `${Math.max(12, (item.support / maxValue) * 118)}px` }}
+                  title={`${item.support} support jobs`}
+                />
+              </div>
+              <span className="text-xs font-extrabold text-slate-500">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HorizontalBars({
+  data,
+}: {
+  data: Array<{ label: string; value: number; tone?: Tone }>;
+}) {
+  const maxValue = Math.max(1, ...data.map((item) => item.value));
+
+  return (
+    <div className="space-y-3">
+      {data.map((item) => (
+        <div key={item.label}>
+          <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+            <span className="font-bold text-slate-700">{item.label}</span>
+            <span className="font-extrabold text-slate-950">{item.value}</span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className={`h-full rounded-full ${barColorClass(item.tone ?? 'info')}`}
+              style={{ width: `${Math.max(8, (item.value / maxValue) * 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TopInstallers({
+  installers,
+}: {
+  installers: Array<{
+    id: string;
+    name: string;
+    specialty: string;
+    completedThisMonth: number;
+    installations: number;
+    activeJobs: number;
+    completionRate: number;
+    rating: number;
+  }>;
+}) {
+  const maxCompleted = Math.max(1, ...installers.map((item) => item.completedThisMonth));
+
+  return (
+    <div className="space-y-3">
+      {installers.map((installer, index) => (
+        <article
+          key={installer.id}
+          className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-kibs-green/15 text-xs font-black text-kibs-deepGreen">
+                  {index + 1}
+                </span>
+                <h3 className="truncate text-sm font-extrabold text-slate-950">
+                  {installer.name}
+                </h3>
+              </div>
+              <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                {installer.specialty}
+              </p>
+            </div>
+            <StatusPill tone="success">{installer.rating.toFixed(1)}</StatusPill>
+          </div>
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
+            <div
+              className="h-full rounded-full bg-kibs-deepGreen"
+              style={{ width: `${Math.max(10, (installer.completedThisMonth / maxCompleted) * 100)}%` }}
+            />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <MiniStat label="Done" value={installer.completedThisMonth} />
+            <MiniStat label="Installs" value={installer.installations} />
+            <MiniStat label="Active" value={installer.activeJobs} />
+          </div>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -1619,7 +1868,7 @@ function InstalledEquipmentList({ siteId }: { siteId: string }) {
 
 function PrintableJobReport({ job }: { job: Job }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-kibs-deepGreen">
@@ -1822,7 +2071,7 @@ function RatingField({ label, value, onChange }: { label: string; value: number;
 
 function ReceiptPanel({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
       <span className="inline-flex rounded-xl bg-kibs-green/15 p-3 text-kibs-deepGreen">
         <Icon className="h-6 w-6" />
       </span>
@@ -1881,6 +2130,18 @@ function toneClass(tone: Tone, variant: 'soft' | 'pill') {
   };
 
   return classes[tone][variant];
+}
+
+function barColorClass(tone: Tone) {
+  const classes: Record<Tone, string> = {
+    neutral: 'bg-slate-500',
+    success: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    urgent: 'bg-kibs-red',
+    info: 'bg-sky-500',
+  };
+
+  return classes[tone];
 }
 
 export default App;

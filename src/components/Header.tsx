@@ -41,14 +41,14 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs transition-all">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
         {/* Brand & Title */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
               src="/kibs-logo.png"
               alt="Kibs Systems Ltd"
-              className="h-10 w-auto max-w-[160px] object-contain sm:h-11 sm:max-w-[200px]"
+              className="h-8 w-auto max-w-[126px] object-contain sm:h-11 sm:max-w-[200px]"
             />
           </div>
           <div className="hidden border-l border-slate-200 pl-3 sm:block">
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Mobile Top Role Switcher (Visible when hamburger open or on smaller screens) */}
-      <div className="border-t border-slate-100 bg-slate-50/90 px-4 py-2 md:hidden">
+      <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2 md:hidden">
         <div className="grid grid-cols-3 gap-1 rounded-lg border border-slate-200 bg-slate-200/60 p-1 text-xs">
           {roleItems.map((item) => {
             const Icon = item.icon;
