@@ -87,6 +87,7 @@ export interface Lead {
   companyName: string;
   contactPerson: string;
   phone: string;
+  email: string;
   serviceInterest: ServiceType;
   stage: LeadStage;
   value: number;

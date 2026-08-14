@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Mail,
+  MessageCircle,
   MapPin,
   MapPinned,
   PackageCheck,
@@ -79,6 +80,7 @@ type ManagerView =
   | 'jobs'
   | 'sales'
   | 'documents'
+  | 'followups'
   | 'technicians'
   | 'reports'
   | 'notifications'
@@ -96,6 +98,7 @@ const managerNav: Array<{ id: ManagerView; label: string; icon: LucideIcon }> = 
   { id: 'jobs', label: 'Jobs', icon: BriefcaseBusiness },
   { id: 'sales', label: 'Sales', icon: Handshake },
   { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'followups', label: 'Follow Ups', icon: MessageCircle },
   { id: 'technicians', label: 'Technicians', icon: UserRound },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
   { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -182,6 +185,20 @@ type TechnicianPerformanceRow = {
   activeJobs: number;
   rating: number;
   total: number;
+};
+
+type FollowUpContact = {
+  id: string;
+  type: 'client' | 'lead';
+  name: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  service: ServiceType | 'Account';
+  stage: string;
+  nextAction: string;
+  nextActionDate: string;
+  owner: string;
 };
 
 const technicianPerformanceSeed: Record<
@@ -1229,6 +1246,10 @@ function renderManagerView(args: {
     return <DocumentGenerator />;
   }
 
+  if (managerView === 'followups') {
+    return <FollowUpsHub jobsState={jobsState} />;
+  }
+
   if (managerView === 'technicians') {
     const technicianPerformance = getTechnicianPerformanceRows(jobsState);
 
@@ -1579,6 +1600,208 @@ function StageMiniCard({
     <div className={`rounded-lg px-1.5 py-2 text-center ${toneClass(tone, 'soft')}`}>
       <p className="text-base font-black leading-none">{value}</p>
       <p className="mt-1 truncate text-[9px] font-black uppercase tracking-tight">{label}</p>
+    </div>
+  );
+}
+
+function FollowUpsHub({ jobsState }: { jobsState: Job[] }) {
+  const [contactType, setContactType] = useState<'all' | 'client' | 'lead'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const contacts = useMemo(() => getFollowUpContacts(jobsState), [jobsState]);
+  const filteredContacts = contacts.filter((contact) => {
+    const matchesType = contactType === 'all' || contact.type === contactType;
+    const searchable = [
+      contact.name,
+      contact.contactPerson,
+      contact.phone,
+      contact.email,
+      contact.stage,
+      contact.service,
+      contact.owner,
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return matchesType && searchable.includes(searchTerm.toLowerCase());
+  });
+  const clientCount = contacts.filter((contact) => contact.type === 'client').length;
+  const leadCount = contacts.filter((contact) => contact.type === 'lead').length;
+  const dueSoonCutoff = new Date();
+  dueSoonCutoff.setDate(dueSoonCutoff.getDate() + 2);
+  const dueSoonDate = dueSoonCutoff.toISOString().slice(0, 10);
+  const dueSoon = contacts.filter((contact) => contact.nextActionDate <= dueSoonDate).length;
+
+  return (
+    <SectionShell title="Follow-Up Center" eyebrow="SMS, WhatsApp & Email">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricCard
+          icon={MessageCircle}
+          label="Contact Queue"
+          value={`${contacts.length}`}
+          detail="Clients and leads"
+          tone="info"
+        />
+        <MetricCard
+          icon={UsersRound}
+          label="Clients"
+          value={`${clientCount}`}
+          detail="Existing accounts"
+          tone="success"
+        />
+        <MetricCard
+          icon={Handshake}
+          label="Leads"
+          value={`${leadCount}`}
+          detail="Sales pipeline"
+          tone="warning"
+        />
+        <MetricCard
+          icon={Clock3}
+          label="Due Soon"
+          value={`${dueSoon}`}
+          detail="Next 48 hours"
+          tone="urgent"
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+        <Panel title="Client & Lead Follow-Up Queue" icon={MessageCircle}>
+          <div className="grid gap-2 sm:grid-cols-[auto_1fr]">
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 text-xs font-black">
+              {(['all', 'client', 'lead'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setContactType(type)}
+                  className={`rounded-lg px-3 py-2 capitalize ${
+                    contactType === type
+                      ? 'bg-white text-kibs-deepGreen shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {type === 'all' ? 'All' : `${type}s`}
+                </button>
+              ))}
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-kibs-deepGreen focus:bg-white"
+                placeholder="Search contact, service, email, phone..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            {filteredContacts.map((contact) => (
+              <FollowUpContactCard key={contact.id} contact={contact} />
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Best Follow-Up Flow" icon={Send}>
+          <div className="space-y-3">
+            <FollowUpStep
+              title="1. WhatsApp first"
+              body="Fastest for Ugandan field clients. Send quotation summaries, survey reminders, and payment nudges."
+            />
+            <FollowUpStep
+              title="2. Email the formal copy"
+              body="Use email when the client needs an official quotation, receipt, or approval trail."
+            />
+            <FollowUpStep
+              title="3. SMS for urgent reminders"
+              body="Use SMS for survey arrival times, support ticket updates, and quick payment confirmations."
+            />
+          </div>
+        </Panel>
+      </div>
+    </SectionShell>
+  );
+}
+
+function FollowUpContactCard({ contact }: { contact: FollowUpContact }) {
+  const message = buildFollowUpMessage(contact);
+  const subject = `Kibs Systems Ltd follow-up: ${contact.name}`;
+
+  return (
+    <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-wider text-kibs-deepGreen">
+            {contact.type === 'client' ? 'Client Account' : 'Sales Lead'}
+          </p>
+          <h3 className="mt-1 truncate text-sm font-extrabold text-slate-950">{contact.name}</h3>
+          <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">
+            {contact.contactPerson} - {contact.service}
+          </p>
+        </div>
+        <StatusPill tone={contact.type === 'client' ? 'success' : 'warning'}>
+          {contact.stage}
+        </StatusPill>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <InfoLine icon={Phone}>{contact.phone}</InfoLine>
+        <InfoLine icon={Mail}>{contact.email}</InfoLine>
+        <InfoLine icon={CalendarDays}>
+          {contact.nextAction} - {formatDate(contact.nextActionDate)}
+        </InfoLine>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <ContactActionLink
+          href={buildWhatsAppUrl(contact.phone, message)}
+          icon={MessageCircle}
+          label="WhatsApp"
+          external
+        />
+        <ContactActionLink
+          href={buildSmsUrl(contact.phone, message)}
+          icon={Phone}
+          label="SMS"
+        />
+        <ContactActionLink
+          href={buildMailtoUrl(contact.email, subject, message)}
+          icon={Mail}
+          label="Email"
+        />
+      </div>
+    </article>
+  );
+}
+
+function ContactActionLink({
+  href,
+  icon: Icon,
+  label,
+  external = false,
+}: {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  external?: boolean;
+}) {
+  return (
+    <a
+      href={href}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] font-black text-slate-700 transition hover:border-kibs-deepGreen hover:bg-kibs-green/10 hover:text-kibs-deepGreen"
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </a>
+  );
+}
+
+function FollowUpStep({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <h3 className="text-sm font-black text-slate-950">{title}</h3>
+      <p className="mt-1 text-xs leading-relaxed text-slate-600">{body}</p>
     </div>
   );
 }
@@ -2411,7 +2634,12 @@ function PrintableJobReport({ job }: { job: Job }) {
 }
 
 function DocumentGenerator() {
+  const documentContacts = useMemo(() => getFollowUpContacts(jobs), []);
+  const defaultDocumentContact =
+    documentContacts.find((contact) => contact.name === 'Pearl Heights Residences') ??
+    documentContacts[0];
   const [documentType, setDocumentType] = useState<'quotation' | 'receipt'>('quotation');
+  const [documentContactId, setDocumentContactId] = useState(defaultDocumentContact?.id ?? '');
   const [clientName, setClientName] = useState('Pearl Heights Residences');
   const [contactPerson, setContactPerson] = useState('Esther K.');
   const [service, setService] = useState<ServiceType>('CCTV');
@@ -2432,6 +2660,20 @@ function DocumentGenerator() {
       ? `QT-${new Date().getFullYear()}-0114`
       : `RC-${new Date().getFullYear()}-0068`;
   const printableRef = React.useRef<HTMLElement | null>(null);
+  const selectedDocumentContact =
+    documentContacts.find((contact) => contact.id === documentContactId) ?? defaultDocumentContact;
+
+  function handleDocumentContactChange(value: string) {
+    const contact = documentContacts.find((item) => item.id === value);
+    setDocumentContactId(value);
+
+    if (!contact) return;
+    setClientName(contact.name);
+    setContactPerson(contact.contactPerson);
+    if (contact.service !== 'Account') {
+      setService(contact.service);
+    }
+  }
 
   function printDocument() {
     const source = printableRef.current;
@@ -2463,6 +2705,30 @@ function DocumentGenerator() {
     }, 0);
   }
 
+  function shareDocumentOnWhatsApp() {
+    const message = buildDocumentShareMessage({
+      documentType,
+      docNumber,
+      clientName,
+      contactPerson,
+      service,
+      description,
+      subtotal: parsedAmount,
+      vat,
+      total: quotationTotal,
+      paidOrDeposit: parsedDeposit,
+      balance: receiptBalance,
+      validUntil,
+      paymentMethod,
+    });
+
+    window.open(
+      buildWhatsAppUrl(selectedDocumentContact?.phone ?? '', message),
+      '_blank',
+      'noopener,noreferrer'
+    );
+  }
+
   return (
     <SectionShell title="Branded Documents" eyebrow="Quotations & Receipts">
       <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
@@ -2486,6 +2752,18 @@ function DocumentGenerator() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
+              <SelectField
+                label="Share To"
+                value={documentContactId}
+                onChange={handleDocumentContactChange}
+                options={documentContacts.map((contact) => contact.id)}
+                format={(value) => {
+                  const contact = documentContacts.find((item) => item.id === value);
+                  return contact
+                    ? `${contact.name} (${titleCase(contact.type)})`
+                    : value;
+                }}
+              />
               <TextField label="Client / Company" value={clientName} onChange={setClientName} />
               <TextField label="Contact Person" value={contactPerson} onChange={setContactPerson} />
               <SelectField
@@ -2509,14 +2787,24 @@ function DocumentGenerator() {
               <TextField label="Payment Method" value={paymentMethod} onChange={setPaymentMethod} />
             </div>
 
-            <button
-              type="button"
-              onClick={printDocument}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-4 py-2.5 text-xs font-black text-white shadow-xs transition hover:bg-emerald-700"
-            >
-              <FileText className="h-4 w-4" />
-              Download PDF
-            </button>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={printDocument}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-4 py-2.5 text-xs font-black text-white shadow-xs transition hover:bg-emerald-700"
+              >
+                <FileText className="h-4 w-4" />
+                Download PDF
+              </button>
+              <button
+                type="button"
+                onClick={shareDocumentOnWhatsApp}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-black text-emerald-800 shadow-xs transition hover:border-kibs-deepGreen hover:bg-kibs-green/15"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Share WhatsApp
+              </button>
+            </div>
           </Panel>
         </div>
 
@@ -2816,6 +3104,156 @@ function ReceiptPanel({ icon: Icon, title, body }: { icon: LucideIcon; title: st
       </div>
     </section>
   );
+}
+
+function getFollowUpContacts(allJobs: Job[]): FollowUpContact[] {
+  const clientContacts: FollowUpContact[] = clients.map((client) => {
+    const clientJobs = allJobs.filter((job) => job.clientId === client.id);
+    const openSupport = clientJobs.filter(
+      (job) => job.jobType === 'support' && !['completed', 'feedback'].includes(job.status)
+    );
+    const latestJob = clientJobs[0];
+    const primaryJob = openSupport[0] ?? latestJob;
+
+    return {
+      id: `client-${client.id}`,
+      type: 'client',
+      name: client.name,
+      contactPerson: client.contactPerson,
+      phone: client.primaryPhone,
+      email: client.email,
+      service: primaryJob?.serviceType ?? 'Account',
+      stage: openSupport.length > 0 ? `${openSupport.length} open` : 'Active',
+      nextAction:
+        openSupport.length > 0
+          ? 'Update client on support progress'
+          : 'Quarterly security check-in',
+      nextActionDate: primaryJob?.scheduledDate ?? '2026-08-18',
+      owner: 'Admin Team',
+    };
+  });
+  const leadContacts: FollowUpContact[] = leads.map((lead) => ({
+    id: `lead-${lead.id}`,
+    type: 'lead',
+    name: lead.companyName,
+    contactPerson: lead.contactPerson,
+    phone: lead.phone,
+    email: lead.email,
+    service: lead.serviceInterest,
+    stage: leadStageLabels[lead.stage],
+    nextAction: lead.nextAction,
+    nextActionDate: lead.nextActionDate,
+    owner: getSalesPerson(lead.assignedSalesId)?.name ?? 'Sales Team',
+  }));
+
+  return [...leadContacts, ...clientContacts].sort((a, b) =>
+    a.nextActionDate.localeCompare(b.nextActionDate)
+  );
+}
+
+function buildFollowUpMessage(contact: FollowUpContact) {
+  const firstName = contact.contactPerson.split(' ')[0] || contact.contactPerson;
+  const context =
+    contact.type === 'lead'
+      ? `We are following up on your ${contact.service} security request. Current stage: ${contact.stage}.`
+      : `We are checking in on your Kibs Systems Ltd security account. Current status: ${contact.stage}.`;
+
+  return [
+    `Hello ${firstName},`,
+    '',
+    context,
+    `Next step: ${contact.nextAction}.`,
+    `Assigned contact: ${contact.owner}.`,
+    '',
+    'Regards,',
+    'Kibs Systems Ltd',
+  ].join('\n');
+}
+
+function buildDocumentShareMessage({
+  documentType,
+  docNumber,
+  clientName,
+  contactPerson,
+  service,
+  description,
+  subtotal,
+  vat,
+  total,
+  paidOrDeposit,
+  balance,
+  validUntil,
+  paymentMethod,
+}: {
+  documentType: 'quotation' | 'receipt';
+  docNumber: string;
+  clientName: string;
+  contactPerson: string;
+  service: ServiceType;
+  description: string;
+  subtotal: number;
+  vat: number;
+  total: number;
+  paidOrDeposit: number;
+  balance: number;
+  validUntil: string;
+  paymentMethod: string;
+}) {
+  const firstName = contactPerson.split(' ')[0] || contactPerson;
+  const label = documentType === 'quotation' ? 'Quotation' : 'Receipt';
+  const paymentLine =
+    documentType === 'quotation'
+      ? `Required deposit: ${formatMoney(paidOrDeposit)}`
+      : `Amount paid: ${formatMoney(paidOrDeposit)} via ${paymentMethod}`;
+  const closingLine =
+    documentType === 'quotation'
+      ? `Valid until: ${formatDate(validUntil)}`
+      : 'Thank you for choosing Kibs Systems Ltd.';
+
+  return [
+    `Hello ${firstName},`,
+    '',
+    `Here is your ${label.toLowerCase()} summary from Kibs Systems Ltd.`,
+    '',
+    `${label}: ${docNumber}`,
+    `Client: ${clientName}`,
+    `Service: ${service}`,
+    `Subtotal: ${formatMoney(subtotal)}`,
+    `VAT: ${formatMoney(vat)}`,
+    `Total: ${formatMoney(total)}`,
+    paymentLine,
+    `Balance: ${formatMoney(balance)}`,
+    '',
+    `Scope: ${description}`,
+    closingLine,
+    '',
+    'Regards,',
+    'Kibs Systems Ltd',
+  ].join('\n');
+}
+
+function normalizePhoneForWhatsApp(phone: string) {
+  return phone.replace(/\D/g, '');
+}
+
+function normalizePhoneForUri(phone: string) {
+  return phone.replace(/\s+/g, '');
+}
+
+function buildWhatsAppUrl(phone: string, message: string) {
+  const normalizedPhone = normalizePhoneForWhatsApp(phone);
+  const encodedMessage = encodeURIComponent(message);
+  return normalizedPhone
+    ? `https://wa.me/${normalizedPhone}?text=${encodedMessage}`
+    : `https://wa.me/?text=${encodedMessage}`;
+}
+
+function buildSmsUrl(phone: string, message: string) {
+  return `sms:${normalizePhoneForUri(phone)}?&body=${encodeURIComponent(message)}`;
+}
+
+function buildMailtoUrl(email: string, subject: string, body: string) {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 function getClient(id: string) {
