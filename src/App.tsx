@@ -168,6 +168,58 @@ const inputClass =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-kibs-deepGreen focus:ring-2 focus:ring-kibs-green/30';
 const labelClass = 'text-xs font-bold uppercase tracking-wider text-slate-500';
 
+type TechnicianPerformanceRow = {
+  id: string;
+  name: string;
+  specialty: string;
+  cctv: number;
+  floodLights: number;
+  accessControl: number;
+  alarmSystem: number;
+  electricFence: number;
+  support: number;
+  maintenance: number;
+  activeJobs: number;
+  rating: number;
+  total: number;
+};
+
+const technicianPerformanceSeed: Record<
+  string,
+  Pick<
+    TechnicianPerformanceRow,
+    'cctv' | 'floodLights' | 'accessControl' | 'alarmSystem' | 'electricFence' | 'support' | 'maintenance'
+  >
+> = {
+  'tech-musa': {
+    cctv: 8,
+    floodLights: 1,
+    accessControl: 4,
+    alarmSystem: 1,
+    electricFence: 0,
+    support: 5,
+    maintenance: 2,
+  },
+  'tech-peter': {
+    cctv: 2,
+    floodLights: 7,
+    accessControl: 1,
+    alarmSystem: 0,
+    electricFence: 5,
+    support: 3,
+    maintenance: 2,
+  },
+  'tech-asha': {
+    cctv: 5,
+    floodLights: 0,
+    accessControl: 2,
+    alarmSystem: 6,
+    electricFence: 1,
+    support: 4,
+    maintenance: 1,
+  },
+};
+
 function App() {
   const [role, setRole] = useState<Role>('manager');
   const [managerView, setManagerView] = useState<ManagerView>('dashboard');
@@ -868,6 +920,7 @@ function renderManagerView(args: {
       { label: 'Jul', installations: 8, support: 10 },
       { label: 'Aug', installations: Math.max(totalInstallations + 5, 6), support: Math.max(totalSupport + 7, 8) },
     ];
+    const technicianPerformance = getTechnicianPerformanceRows(jobsState);
 
     return (
       <SectionShell
@@ -917,6 +970,12 @@ function renderManagerView(args: {
             detail={`${totalMaintenance} maintenance plan`}
             tone="success"
           />
+        </div>
+
+        <div className="mt-4">
+          <Panel title="Technician Installation Ranking" icon={Trophy}>
+            <TechnicianPerformanceTable rows={technicianPerformance} />
+          </Panel>
         </div>
 
         <div className="mt-4 grid gap-3 sm:gap-4 xl:grid-cols-[1.35fr_0.65fr]">
@@ -1171,12 +1230,20 @@ function renderManagerView(args: {
   }
 
   if (managerView === 'technicians') {
+    const technicianPerformance = getTechnicianPerformanceRows(jobsState);
+
     return (
       <SectionShell
         title="Field Technicians & Teams"
         eyebrow="Roster & Workloads"
         action={<PrimaryButton icon={Plus}>+ Add Technician</PrimaryButton>}
       >
+        <div className="mb-4">
+          <Panel title="Ranked Installation & Support Totals" icon={Trophy}>
+            <TechnicianPerformanceTable rows={technicianPerformance} />
+          </Panel>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {technicians.map((tech) => {
             const techJobs = jobsState.filter((j) => j.assignedTechnicianIds.includes(tech.id));
@@ -2246,65 +2313,98 @@ function DocumentGenerator() {
     documentType === 'quotation'
       ? `QT-${new Date().getFullYear()}-0114`
       : `RC-${new Date().getFullYear()}-0068`;
+  const printableRef = React.useRef<HTMLElement | null>(null);
+
+  function printDocument() {
+    const source = printableRef.current;
+    if (!source) {
+      window.print();
+      return;
+    }
+
+    const printRoot = document.createElement('div');
+    const clone = source.cloneNode(true) as HTMLElement;
+    printRoot.className = 'print-export-root';
+    printRoot.appendChild(clone);
+    document.body.appendChild(printRoot);
+    document.body.classList.add('printing-document');
+
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      printRoot.remove();
+      document.body.classList.remove('printing-document');
+      window.removeEventListener('afterprint', cleanup);
+    };
+
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.setTimeout(() => {
+      window.print();
+      window.setTimeout(cleanup, 700);
+    }, 0);
+  }
 
   return (
     <SectionShell title="Branded Documents" eyebrow="Quotations & Receipts">
       <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-        <Panel title="Document Details" icon={FileText}>
-          <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 text-xs font-black">
-            {(['quotation', 'receipt'] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setDocumentType(type)}
-                className={`rounded-lg px-3 py-2 capitalize ${
-                  documentType === type
-                    ? 'bg-white text-kibs-deepGreen shadow-xs'
-                    : 'text-slate-500'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
+        <div className="no-print">
+          <Panel title="Document Details" icon={FileText}>
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 text-xs font-black">
+              {(['quotation', 'receipt'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setDocumentType(type)}
+                  className={`rounded-lg px-3 py-2 capitalize ${
+                    documentType === type
+                      ? 'bg-white text-kibs-deepGreen shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Client / Company" value={clientName} onChange={setClientName} />
-            <TextField label="Contact Person" value={contactPerson} onChange={setContactPerson} />
-            <SelectField
-              label="Service"
-              value={service}
-              onChange={(value) => setService(value as ServiceType)}
-              options={serviceTypes}
-            />
-            <TextField label="Valid Until" value={validUntil} onChange={setValidUntil} />
-          </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField label="Client / Company" value={clientName} onChange={setClientName} />
+              <TextField label="Contact Person" value={contactPerson} onChange={setContactPerson} />
+              <SelectField
+                label="Service"
+                value={service}
+                onChange={(value) => setService(value as ServiceType)}
+                options={serviceTypes}
+              />
+              <TextField label="Valid Until" value={validUntil} onChange={setValidUntil} />
+            </div>
 
-          <TextareaField label="Scope / Description" value={description} onChange={setDescription} />
+            <TextareaField label="Scope / Description" value={description} onChange={setDescription} />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Subtotal UGX" value={amount} onChange={setAmount} />
-            <TextField
-              label={documentType === 'quotation' ? 'Required Deposit UGX' : 'Amount Paid UGX'}
-              value={deposit}
-              onChange={setDeposit}
-            />
-            <TextField label="Payment Method" value={paymentMethod} onChange={setPaymentMethod} />
-          </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField label="Subtotal UGX" value={amount} onChange={setAmount} />
+              <TextField
+                label={documentType === 'quotation' ? 'Required Deposit UGX' : 'Amount Paid UGX'}
+                value={deposit}
+                onChange={setDeposit}
+              />
+              <TextField label="Payment Method" value={paymentMethod} onChange={setPaymentMethod} />
+            </div>
 
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-4 py-2.5 text-xs font-black text-white shadow-xs transition hover:bg-emerald-700"
-          >
-            <FileText className="h-4 w-4" />
-            Print / Save as PDF
-          </button>
-        </Panel>
+            <button
+              type="button"
+              onClick={printDocument}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-4 py-2.5 text-xs font-black text-white shadow-xs transition hover:bg-emerald-700"
+            >
+              <FileText className="h-4 w-4" />
+              Download PDF
+            </button>
+          </Panel>
+        </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-950 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-4 border-b-4 border-kibs-green pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <section ref={printableRef} className="print-document rounded-2xl border border-slate-200 bg-white p-3 shadow-xs sm:p-5">
+          <div className="print-document-shell overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+            <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
               <img
                 src="/kibs-logo-desktop.png"
                 alt="Kibs Systems Ltd"
@@ -2319,59 +2419,61 @@ function DocumentGenerator() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className={labelClass}>Bill To</p>
-                <h3 className="mt-1 text-base font-black text-slate-950">{clientName}</h3>
-                <p className="text-xs font-semibold text-slate-600">{contactPerson}</p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className={labelClass}>Company</p>
-                <h3 className="mt-1 text-base font-black text-slate-950">Kibs Systems Ltd</h3>
-                <p className="text-xs font-semibold text-slate-600">
-                  Integrating Technology to your security needs
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-              <div className="grid grid-cols-[1fr_0.32fr] bg-slate-900 px-3 py-2 text-xs font-black uppercase text-white">
-                <span>Description</span>
-                <span className="text-right">Amount</span>
-              </div>
-              <div className="grid grid-cols-[1fr_0.32fr] gap-3 px-3 py-4 text-sm">
-                <div>
-                  <p className="font-black text-slate-950">{service} Security System</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">{description}</p>
+            <div className="space-y-4 p-4 sm:p-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-slate-50 p-3">
+                  <p className={labelClass}>Bill To</p>
+                  <h3 className="mt-1 text-base font-black text-slate-950">{clientName}</h3>
+                  <p className="text-xs font-semibold text-slate-600">{contactPerson}</p>
                 </div>
-                <p className="text-right font-black text-slate-950">{formatMoney(parsedAmount)}</p>
+                <div className="rounded-xl bg-slate-50 p-3">
+                  <p className={labelClass}>Company</p>
+                  <h3 className="mt-1 text-base font-black text-slate-950">Kibs Systems Ltd</h3>
+                  <p className="text-xs font-semibold text-slate-600">
+                    Integrating Technology to your security needs
+                  </p>
+                </div>
               </div>
-              <DocumentTotalLine label="VAT 18%" value={formatMoney(vat)} />
-              <DocumentTotalLine label="Total" value={formatMoney(quotationTotal)} strong />
-              <DocumentTotalLine
-                label={documentType === 'quotation' ? 'Required Deposit' : 'Amount Paid'}
-                value={formatMoney(parsedDeposit)}
-              />
-              <DocumentTotalLine
-                label={documentType === 'quotation' ? 'Balance After Deposit' : 'Balance Due'}
-                value={formatMoney(receiptBalance)}
-                strong
-              />
-            </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 p-3">
-                <p className={labelClass}>{documentType === 'quotation' ? 'Terms' : 'Payment'}</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                  {documentType === 'quotation'
-                    ? `Quotation valid until ${formatDate(validUntil)}. Installation starts after deposit confirmation.`
-                    : `Payment received by ${paymentMethod}. Thank you for choosing Kibs Systems Ltd.`}
-                </p>
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <div className="grid grid-cols-[1fr_0.32fr] bg-slate-900 px-3 py-2 text-xs font-black uppercase text-white">
+                  <span>Description</span>
+                  <span className="text-right">Amount</span>
+                </div>
+                <div className="grid grid-cols-[1fr_0.32fr] gap-3 px-3 py-4 text-sm">
+                  <div>
+                    <p className="font-black text-slate-950">{service} Security System</p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600">{description}</p>
+                  </div>
+                  <p className="text-right font-black text-slate-950">{formatMoney(parsedAmount)}</p>
+                </div>
+                <DocumentTotalLine label="VAT 18%" value={formatMoney(vat)} />
+                <DocumentTotalLine label="Total" value={formatMoney(quotationTotal)} strong />
+                <DocumentTotalLine
+                  label={documentType === 'quotation' ? 'Required Deposit' : 'Amount Paid'}
+                  value={formatMoney(parsedDeposit)}
+                />
+                <DocumentTotalLine
+                  label={documentType === 'quotation' ? 'Balance After Deposit' : 'Balance Due'}
+                  value={formatMoney(receiptBalance)}
+                  strong
+                />
               </div>
-              <div className="rounded-xl border border-slate-200 p-3">
-                <p className={labelClass}>Prepared By</p>
-                <p className="mt-1 text-sm font-black text-slate-950">Admin / Sales Manager</p>
-                <p className="text-xs text-slate-500">Kibs Systems Ltd</p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 p-3">
+                  <p className={labelClass}>{documentType === 'quotation' ? 'Terms' : 'Payment'}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    {documentType === 'quotation'
+                      ? `Quotation valid until ${formatDate(validUntil)}. Installation starts after deposit confirmation.`
+                      : `Payment received by ${paymentMethod}. Thank you for choosing Kibs Systems Ltd.`}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 p-3">
+                  <p className={labelClass}>Prepared By</p>
+                  <p className="mt-1 text-sm font-black text-slate-950">Admin / Sales Manager</p>
+                  <p className="text-xs text-slate-500">Kibs Systems Ltd</p>
+                </div>
               </div>
             </div>
           </div>
