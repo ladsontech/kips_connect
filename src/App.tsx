@@ -2070,6 +2070,124 @@ function TopInstallers({
   );
 }
 
+function getTechnicianPerformanceRows(allJobs: Job[]): TechnicianPerformanceRow[] {
+  return technicians
+    .map((technician) => {
+      const assignedJobs = allJobs.filter((job) =>
+        job.assignedTechnicianIds.includes(technician.id)
+      );
+      const seeded = technicianPerformanceSeed[technician.id] ?? {
+        cctv: 0,
+        floodLights: 0,
+        accessControl: 0,
+        alarmSystem: 0,
+        electricFence: 0,
+        support: 0,
+        maintenance: 0,
+      };
+      const countInstallations = (serviceType: ServiceType) =>
+        assignedJobs.filter(
+          (job) => job.jobType === 'installation' && job.serviceType === serviceType
+        ).length;
+      const support = seeded.support + assignedJobs.filter((job) => job.jobType === 'support').length;
+      const maintenance =
+        seeded.maintenance + assignedJobs.filter((job) => job.jobType === 'maintenance').length;
+      const row = {
+        id: technician.id,
+        name: technician.name,
+        specialty: technician.specialty.join(', '),
+        cctv: seeded.cctv + countInstallations('CCTV'),
+        floodLights: seeded.floodLights + countInstallations('Flood Lights'),
+        accessControl: seeded.accessControl + countInstallations('Access Control'),
+        alarmSystem: seeded.alarmSystem + countInstallations('Alarm System'),
+        electricFence: seeded.electricFence + countInstallations('Electric Fence'),
+        support,
+        maintenance,
+        activeJobs: assignedJobs.filter((job) => job.status !== 'completed').length,
+        rating: technician.averageRating,
+        total: 0,
+      };
+
+      return {
+        ...row,
+        total:
+          row.cctv +
+          row.floodLights +
+          row.accessControl +
+          row.alarmSystem +
+          row.electricFence +
+          row.support +
+          row.maintenance,
+      };
+    })
+    .sort((a, b) => b.total - a.total || b.rating - a.rating);
+}
+
+function TechnicianPerformanceTable({ rows }: { rows: TechnicianPerformanceRow[] }) {
+  const numericColumns: Array<{ key: keyof TechnicianPerformanceRow; label: string }> = [
+    { key: 'cctv', label: 'CCTV' },
+    { key: 'floodLights', label: 'Flood Lights' },
+    { key: 'accessControl', label: 'Access' },
+    { key: 'alarmSystem', label: 'Alarm' },
+    { key: 'electricFence', label: 'Fence' },
+    { key: 'support', label: 'Support' },
+    { key: 'maintenance', label: 'Maint.' },
+  ];
+
+  return (
+    <div className="overflow-x-auto pb-1">
+      <table className="w-full min-w-[760px] border-separate border-spacing-0 text-xs">
+        <thead>
+          <tr className="bg-slate-50 text-left text-[10px] font-black uppercase tracking-wider text-slate-500">
+            <th className="rounded-l-xl border-y border-l border-slate-200 px-3 py-2">Rank</th>
+            <th className="border-y border-slate-200 px-3 py-2">Technician</th>
+            {numericColumns.map((column) => (
+              <th key={column.key} className="border-y border-slate-200 px-3 py-2 text-right">
+                {column.label}
+              </th>
+            ))}
+            <th className="border-y border-slate-200 px-3 py-2 text-right">Active</th>
+            <th className="rounded-r-xl border-y border-r border-slate-200 px-3 py-2 text-right">
+              Total
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={row.id} className="align-middle">
+              <td className="border-b border-slate-100 px-3 py-3">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-kibs-green/15 text-[11px] font-black text-kibs-deepGreen">
+                  {index + 1}
+                </span>
+              </td>
+              <td className="border-b border-slate-100 px-3 py-3">
+                <p className="whitespace-nowrap text-sm font-black text-slate-950">{row.name}</p>
+                <p className="mt-0.5 whitespace-nowrap text-[11px] font-semibold text-slate-500">
+                  {row.specialty}
+                </p>
+              </td>
+              {numericColumns.map((column) => (
+                <td
+                  key={column.key}
+                  className="border-b border-slate-100 px-3 py-3 text-right font-extrabold text-slate-700"
+                >
+                  {row[column.key]}
+                </td>
+              ))}
+              <td className="border-b border-slate-100 px-3 py-3 text-right font-extrabold text-amber-700">
+                {row.activeJobs}
+              </td>
+              <td className="border-b border-slate-100 px-3 py-3 text-right text-base font-black text-slate-950">
+                {row.total}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function JobListItem({
   job,
   selected,
