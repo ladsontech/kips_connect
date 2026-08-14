@@ -1,7 +1,6 @@
 import React, { FormEvent, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  Activity,
   BarChart3,
   Bell,
   BriefcaseBusiness,
@@ -913,23 +912,32 @@ function renderManagerView(args: {
             : 'success') as Tone,
       }))
       .filter((item) => item.value > 0);
-    const statusMix: Array<{ label: string; value: number; tone: Tone }> = ([
-      'reported',
-      'scheduled',
-      'assigned',
-      'in_progress',
-      'completed',
-    ] as JobStatus[])
-      .map((status) => ({
-        label: statusLabels[status],
-        value: jobsState.filter((job) => job.status === status).length,
-        tone: (status === 'completed'
-          ? 'success'
-          : status === 'in_progress'
-            ? 'warning'
-            : 'info') as Tone,
-      }))
-      .filter((item) => item.value > 0);
+    const statusOverview = [
+      {
+        label: 'Completed',
+        value: jobsState.filter((job) => ['completed', 'feedback'].includes(job.status)).length,
+        color: '#16a34a',
+      },
+      {
+        label: 'Active',
+        value: jobsState.filter((job) =>
+          ['assigned', 'in_progress', 'testing'].includes(job.status)
+        ).length,
+        color: '#f59e0b',
+      },
+      {
+        label: 'Pending',
+        value: jobsState.filter((job) =>
+          ['draft', 'surveyed', 'reported', 'scheduled'].includes(job.status)
+        ).length,
+        color: '#0ea5e9',
+      },
+      {
+        label: 'Resolved',
+        value: jobsState.filter((job) => job.status === 'resolved').length,
+        color: '#64748b',
+      },
+    ];
     const monthlyTrend = [
       { label: 'Apr', installations: 5, support: 7 },
       { label: 'May', installations: 7, support: 8 },
@@ -1006,13 +1014,11 @@ function renderManagerView(args: {
         </div>
 
         <div className="mt-4 grid gap-3 sm:gap-4 lg:grid-cols-3">
-          <Panel title="Service Mix" icon={PieChart}>
-            <HorizontalBars data={serviceMix} />
-          </Panel>
-
-          <Panel title="Job Status Mix" icon={Activity}>
-            <HorizontalBars data={statusMix} />
-          </Panel>
+          <div className="lg:col-span-2">
+            <Panel title="Job Status Overview" icon={PieChart}>
+              <StatusOverviewPie data={statusOverview} />
+            </Panel>
+          </div>
 
           <Panel title="Operational Health" icon={Sparkles}>
             <div className="grid grid-cols-2 gap-2">
@@ -1029,6 +1035,10 @@ function renderManagerView(args: {
                 Field activity is healthy: installers are assigned, photo evidence is flowing, and urgent support is visible to management.
               </p>
             </div>
+          </Panel>
+
+          <Panel title="Service Mix" icon={PieChart}>
+            <HorizontalBars data={serviceMix} />
           </Panel>
         </div>
 
@@ -1529,60 +1539,133 @@ function LeadCard({ lead, compact = false }: { lead: Lead; compact?: boolean }) 
 }
 
 function SalesPeopleDashboard() {
-  return (
-    <div className="grid gap-3 lg:grid-cols-3">
-      {salesPeople.map((person) => {
-        const personLeads = leads.filter((lead) => lead.assignedSalesId === person.id);
-        const stageCounts = {
-          new: personLeads.filter((lead) => ['new', 'contacted'].includes(lead.stage)).length,
-          survey: personLeads.filter((lead) => lead.stage === 'survey_booked').length,
-          quoted: personLeads.filter((lead) => ['quoted', 'negotiation'].includes(lead.stage)).length,
-          complete: personLeads.filter((lead) => lead.stage === 'won').length,
-        };
-        const openValue = personLeads
-          .filter((lead) => !['won', 'lost'].includes(lead.stage))
-          .reduce((total, lead) => total + lead.value, 0);
-        const wonValue = personLeads
-          .filter((lead) => lead.stage === 'won')
-          .reduce((total, lead) => total + lead.value, 0);
-        const targetProgress = Math.min(100, Math.round((wonValue / person.monthlyTarget) * 100));
+  const salesPerformance = salesPeople
+    .map((person) => {
+      const personLeads = leads.filter((lead) => lead.assignedSalesId === person.id);
+      const stageCounts = {
+        new: personLeads.filter((lead) => ['new', 'contacted'].includes(lead.stage)).length,
+        survey: personLeads.filter((lead) => lead.stage === 'survey_booked').length,
+        quoted: personLeads.filter((lead) => ['quoted', 'negotiation'].includes(lead.stage)).length,
+        complete: personLeads.filter((lead) => lead.stage === 'won').length,
+      };
+      const openLeads = personLeads.filter((lead) => !['won', 'lost'].includes(lead.stage));
+      const openValue = openLeads.reduce((total, lead) => total + lead.value, 0);
+      const weightedValue = openLeads.reduce(
+        (total, lead) => total + lead.value * (lead.probability / 100),
+        0
+      );
+      const wonValue = personLeads
+        .filter((lead) => lead.stage === 'won')
+        .reduce((total, lead) => total + lead.value, 0);
+      const targetProgress = Math.min(100, Math.round((wonValue / person.monthlyTarget) * 100));
 
-        return (
+      return {
+        ...person,
+        personLeads,
+        stageCounts,
+        openValue,
+        weightedValue,
+        wonValue,
+        targetProgress,
+      };
+    })
+    .sort((a, b) => b.wonValue - a.wonValue || b.weightedValue - a.weightedValue);
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto pb-1">
+        <table className="w-full min-w-[680px] border-separate border-spacing-0 text-xs">
+          <thead>
+            <tr className="bg-slate-50 text-left text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <th className="rounded-l-xl border-y border-l border-slate-200 px-3 py-2">Rank</th>
+              <th className="border-y border-slate-200 px-3 py-2">Sales Person</th>
+              <th className="border-y border-slate-200 px-3 py-2 text-right">Won Revenue</th>
+              <th className="border-y border-slate-200 px-3 py-2 text-right">Open Pipeline</th>
+              <th className="border-y border-slate-200 px-3 py-2 text-right">Weighted</th>
+              <th className="border-y border-slate-200 px-3 py-2 text-right">Deals</th>
+              <th className="rounded-r-xl border-y border-r border-slate-200 px-3 py-2 text-right">
+                Target
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {salesPerformance.map((person, index) => (
+              <tr key={person.id} className="align-middle">
+                <td className="border-b border-slate-100 px-3 py-3">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-kibs-green/15 text-[11px] font-black text-kibs-deepGreen">
+                    {index + 1}
+                  </span>
+                </td>
+                <td className="border-b border-slate-100 px-3 py-3">
+                  <p className="whitespace-nowrap text-sm font-black text-slate-950">{person.name}</p>
+                  <p className="mt-0.5 whitespace-nowrap text-[11px] font-semibold text-slate-500">
+                    {person.territory}
+                  </p>
+                </td>
+                <td className="border-b border-slate-100 px-3 py-3 text-right text-sm font-black text-emerald-700">
+                  {formatMoneyShort(person.wonValue)}
+                </td>
+                <td className="border-b border-slate-100 px-3 py-3 text-right font-extrabold text-slate-700">
+                  {formatMoneyShort(person.openValue)}
+                </td>
+                <td className="border-b border-slate-100 px-3 py-3 text-right font-extrabold text-slate-700">
+                  {formatMoneyShort(person.weightedValue)}
+                </td>
+                <td className="border-b border-slate-100 px-3 py-3 text-right font-extrabold text-slate-700">
+                  {person.stageCounts.complete} / {person.personLeads.length}
+                </td>
+                <td className="border-b border-slate-100 px-3 py-3 text-right font-black text-slate-950">
+                  {person.targetProgress}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        {salesPerformance.map((person, index) => (
           <article key={person.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kibs-green/15 text-sm font-black text-kibs-deepGreen sm:h-10 sm:w-10">
-                {person.name.charAt(0)}
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kibs-green/15 text-sm font-black text-kibs-deepGreen sm:h-10 sm:w-10">
+                  {person.name.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-extrabold text-slate-950">{person.name}</h3>
+                  <p className="truncate text-xs text-slate-500">{person.territory}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h3 className="truncate text-sm font-extrabold text-slate-950">{person.name}</h3>
-                <p className="truncate text-xs text-slate-500">{person.territory}</p>
-              </div>
+              <StatusPill tone={index === 0 ? 'success' : 'info'}>Rank {index + 1}</StatusPill>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-lg bg-slate-50 p-2">
                 <p className="font-bold uppercase text-slate-500">Open</p>
-                <p className="mt-0.5 font-black text-slate-950">{formatMoneyShort(openValue)}</p>
+                <p className="mt-0.5 font-black text-slate-950">{formatMoneyShort(person.openValue)}</p>
               </div>
               <div className="rounded-lg bg-emerald-50 p-2">
                 <p className="font-bold uppercase text-emerald-700">Won</p>
-                <p className="mt-0.5 font-black text-emerald-950">{formatMoneyShort(wonValue)}</p>
+                <p className="mt-0.5 font-black text-emerald-950">{formatMoneyShort(person.wonValue)}</p>
               </div>
             </div>
             <div className="mt-2 grid grid-cols-4 gap-1.5">
-              <StageMiniCard label="New" value={stageCounts.new} tone="info" />
-              <StageMiniCard label="Survey" value={stageCounts.survey} tone="warning" />
-              <StageMiniCard label="Quoted" value={stageCounts.quoted} tone="urgent" />
-              <StageMiniCard label="Won" value={stageCounts.complete} tone="success" />
+              <StageMiniCard label="New" value={person.stageCounts.new} tone="info" />
+              <StageMiniCard label="Survey" value={person.stageCounts.survey} tone="warning" />
+              <StageMiniCard label="Quoted" value={person.stageCounts.quoted} tone="urgent" />
+              <StageMiniCard label="Won" value={person.stageCounts.complete} tone="success" />
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-kibs-deepGreen" style={{ width: `${Math.max(4, targetProgress)}%` }} />
+              <div
+                className="h-full rounded-full bg-kibs-deepGreen"
+                style={{ width: `${Math.max(4, person.targetProgress)}%` }}
+              />
             </div>
             <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Target progress {targetProgress}%
+              Target progress {person.targetProgress}%
             </p>
           </article>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
@@ -2233,6 +2316,69 @@ function HorizontalBars({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function StatusOverviewPie({
+  data,
+}: {
+  data: Array<{ label: string; value: number; color: string }>;
+}) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  let cursor = 0;
+  const visibleSlices = data.filter((item) => item.value > 0);
+  const chartGradient =
+    visibleSlices.length > 0
+      ? `conic-gradient(${visibleSlices
+          .map((item) => {
+            const start = cursor;
+            const width = (item.value / total) * 100;
+            cursor += width;
+            return `${item.color} ${start}% ${cursor}%`;
+          })
+          .join(', ')})`
+      : '#e2e8f0';
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-[11rem_1fr] sm:items-center">
+      <div className="relative mx-auto h-40 w-40 shrink-0 rounded-full border border-slate-200 shadow-sm">
+        <div
+          className="h-full w-full rounded-full"
+          style={{ background: chartGradient }}
+          aria-label="Job status pie chart"
+        />
+        <div className="absolute inset-8 flex flex-col items-center justify-center rounded-full bg-white text-center shadow-inner">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total</p>
+          <p className="text-2xl font-black text-slate-950">{total}</p>
+          <p className="text-[10px] font-bold text-slate-500">Jobs</p>
+        </div>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {data.map((item) => {
+          const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
+
+          return (
+            <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-sm"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <p className="truncate text-xs font-black text-slate-700">{item.label}</p>
+                </div>
+                <p className="text-xs font-black text-slate-950">{percentage}%</p>
+              </div>
+              <p className="mt-2 text-2xl font-black text-slate-950">{item.value}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {item.value === 1 ? 'Job' : 'Jobs'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
