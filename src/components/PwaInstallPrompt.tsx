@@ -1,9 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+declare global {
+  interface Window {
+    __kibsInstallPromptEvent?: BeforeInstallPromptEvent | null;
+    __kibsAppInstalled?: boolean;
+  }
 }
 
 function isStandaloneMode() {
@@ -19,54 +26,81 @@ export function PwaInstallPrompt() {
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandaloneMode()) {
+    if (isStandaloneMode() || window.__kibsAppInstalled) {
       setInstalled(true);
       return;
     }
 
-    const showTimer = window.setTimeout(() => setVisible(true), 1200);
+    if (window.__kibsInstallPromptEvent) {
+      setInstallEvent(window.__kibsInstallPromptEvent);
+      setVisible(true);
+    }
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      setInstallEvent(event as BeforeInstallPromptEvent);
+      const promptEvent = event as BeforeInstallPromptEvent;
+      window.__kibsInstallPromptEvent = promptEvent;
+      setInstallEvent(promptEvent);
       setVisible(true);
     };
 
+    const handleStoredInstallPrompt = () => {
+      if (window.__kibsInstallPromptEvent) {
+        setInstallEvent(window.__kibsInstallPromptEvent);
+        setVisible(true);
+      }
+    };
+
     const handleInstalled = () => {
+      window.__kibsAppInstalled = true;
+      window.__kibsInstallPromptEvent = null;
+      setInstallEvent(null);
       setInstalled(true);
       setVisible(false);
     };
 
+    const handleStandaloneChange = () => {
+      if (isStandaloneMode()) {
+        handleInstalled();
+      }
+    };
+
+    const displayModeQuery = window.matchMedia('(display-mode: standalone)');
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('kibs-install-ready', handleStoredInstallPrompt);
     window.addEventListener('appinstalled', handleInstalled);
+    window.addEventListener('kibs-app-installed', handleInstalled);
+    displayModeQuery.addEventListener('change', handleStandaloneChange);
 
     return () => {
-      window.clearTimeout(showTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('kibs-install-ready', handleStoredInstallPrompt);
       window.removeEventListener('appinstalled', handleInstalled);
+      window.removeEventListener('kibs-app-installed', handleInstalled);
+      displayModeQuery.removeEventListener('change', handleStandaloneChange);
     };
   }, []);
 
-  const helperText = useMemo(() => {
-    if (installEvent) {
-      return 'Install Kibs Connect on this device for faster field access.';
-    }
-
-    return 'Install from your browser menu if the native prompt is not shown.';
-  }, [installEvent]);
-
   async function handleInstall() {
     if (!installEvent) {
+      setVisible(false);
       return;
     }
 
     await installEvent.prompt();
-    await installEvent.userChoice.catch(() => undefined);
+    const choice = await installEvent.userChoice.catch(() => undefined);
+
+    if (choice?.outcome === 'accepted') {
+      setInstalled(true);
+    }
+
+    window.__kibsInstallPromptEvent = null;
     setInstallEvent(null);
     setVisible(false);
   }
 
-  if (installed || !visible) {
+  if (installed || !visible || !installEvent) {
     return null;
   }
 
@@ -80,7 +114,9 @@ export function PwaInstallPrompt() {
         />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-black text-slate-950">Install Kibs Connect</h2>
-          <p className="mt-0.5 text-xs leading-snug text-slate-600">{helperText}</p>
+          <p className="mt-0.5 text-xs leading-snug text-slate-600">
+            Add the app to this device for faster field access.
+          </p>
         </div>
         <button
           type="button"
@@ -94,8 +130,7 @@ export function PwaInstallPrompt() {
       <button
         type="button"
         onClick={handleInstall}
-        disabled={!installEvent}
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-600"
+        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700"
       >
         <Download className="h-4 w-4" />
         Install App

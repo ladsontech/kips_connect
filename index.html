@@ -15,6 +15,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.__kibsInstallPromptEvent = event;
+        window.dispatchEvent(new Event('kibs-install-ready'));
+      });
+
+      window.addEventListener('appinstalled', function () {
+        window.__kibsAppInstalled = true;
+        window.__kibsInstallPromptEvent = null;
+        window.dispatchEvent(new Event('kibs-app-installed'));
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

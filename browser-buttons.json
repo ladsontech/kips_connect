@@ -1,0 +1,142 @@
+[
+  {
+    "cls": "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 bg-white text-kibs-deepGreen shadow-xs ring-1 ring-slate-950/5",
+    "index": 0,
+    "text": "Manager"
+  },
+  {
+    "cls": "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 text-slate-600 hover:text-slate-900 hover:bg-white/50",
+    "index": 1,
+    "text": "Technician"
+  },
+  {
+    "cls": "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 text-slate-600 hover:text-slate-900 hover:bg-white/50",
+    "index": 2,
+    "text": "Sales"
+  },
+  {
+    "cls": "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150 text-slate-600 hover:text-slate-900 hover:bg-white/50",
+    "index": 3,
+    "text": "Client Portal"
+  },
+  {
+    "cls": "flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 md:hidden",
+    "index": 4,
+    "text": ""
+  },
+  {
+    "cls": "flex flex-col items-center justify-center gap-0.5 rounded-md py-1 font-bold transition bg-white text-kibs-deepGreen shadow-xs",
+    "index": 5,
+    "text": "Manager"
+  },
+  {
+    "cls": "flex flex-col items-center justify-center gap-0.5 rounded-md py-1 font-bold transition text-slate-600 hover:text-slate-900",
+    "index": 6,
+    "text": "Technician"
+  },
+  {
+    "cls": "flex flex-col items-center justify-center gap-0.5 rounded-md py-1 font-bold transition text-slate-600 hover:text-slate-900",
+    "index": 7,
+    "text": "Sales"
+  },
+  {
+    "cls": "flex flex-col items-center justify-center gap-0.5 rounded-md py-1 font-bold transition text-slate-600 hover:text-slate-900",
+    "index": 8,
+    "text": "Client Portal"
+  },
+  {
+    "cls": "rounded-lg p-1 text-slate-400 hover:bg-slate-100",
+    "index": 9,
+    "text": ""
+  },
+  {
+    "cls": "mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-600",
+    "index": 10,
+    "text": "Install App"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all bg-kibs-green/15 text-kibs-deepGreen shadow-xs",
+    "index": 11,
+    "text": "Dashboard"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 12,
+    "text": "Clients"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 13,
+    "text": "Sites"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 14,
+    "text": "Jobs"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 15,
+    "text": "Sales"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 16,
+    "text": "Documents"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 17,
+    "text": "Technicians"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 18,
+    "text": "Reports"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 19,
+    "text": "Notifications"
+  },
+  {
+    "cls": "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+    "index": 20,
+    "text": "Settings"
+  },
+  {
+    "cls": "w-full rounded-2xl border p-3 text-left shadow-xs transition sm:p-4 border-slate-200 bg-white hover:border-slate-300",
+    "index": 21,
+    "text": "urgentS-0052Camera 6 offlineABC Apartments — Kira RoadAssignedSupport•CCTV"
+  },
+  {
+    "cls": "w-full rounded-2xl border p-3 text-left shadow-xs transition sm:p-4 border-slate-200 bg-white hover:border-slate-300",
+    "index": 22,
+    "text": "urgentS-0048False alarm at receptionXYZ Offices — Nakasero HQCompletedSupport•Alarm System"
+  },
+  {
+    "cls": "flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all text-kibs-deepGreen font-bold",
+    "index": 23,
+    "text": "Dashboard"
+  },
+  {
+    "cls": "flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all text-slate-500 hover:text-slate-800",
+    "index": 24,
+    "text": "Clients"
+  },
+  {
+    "cls": "flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all text-slate-500 hover:text-slate-800",
+    "index": 25,
+    "text": "Sites"
+  },
+  {
+    "cls": "flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all text-slate-500 hover:text-slate-800",
+    "index": 26,
+    "text": "Jobs"
+  },
+  {
+    "cls": "flex flex-1 flex-col items-center justify-center py-0.5 text-center transition-all text-slate-500 hover:text-slate-800",
+    "index": 27,
+    "text": "More"
+  }
+]
