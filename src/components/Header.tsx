@@ -21,15 +21,13 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-6 sm:py-2.5">
         <div className="flex items-center gap-3">
-          {/* Mobile — just the circular emblem icon */}
+          {/* Mobile — PWA style app icon logo */}
           <div className="flex items-center gap-2 sm:hidden">
-            <div className="h-9 w-9 overflow-hidden rounded-full flex items-center justify-center">
-              <img
-                src="/kibs-logo-mobile.png"
-                alt="Kibs Systems Ltd"
-                className="h-[170%] w-[170%] max-w-none object-contain"
-              />
-            </div>
+            <img
+              src="/kibs-logo-mobile.png"
+              alt="Kibs Systems Ltd"
+              className="h-9 w-9 shrink-0 rounded-xl object-cover"
+            />
             <div>
               <span className="text-sm font-black tracking-tight text-slate-900">Kibs Connect</span>
               <p className="text-[10px] font-semibold text-slate-500">Survey Portal</p>
