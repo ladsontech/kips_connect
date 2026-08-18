@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { LogIn, Lock, Mail } from 'lucide-react';
-import { users } from '../data/mockData';
 import type { User } from '../types';
 
 interface LoginPageProps {
+  users: User[];
   onLogin: (user: User) => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ users, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

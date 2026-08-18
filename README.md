@@ -13,9 +13,11 @@ surveys it and reports the number of devices used; admins review and approve.
 - Each survey records CCTV cameras (2MP, 4MP, 5MP, 8MP/4K), flood lights (30W, 50W,
   100W, 200W), and solar panels installed or proposed
 - Technicians can attach up to 6 site photos per survey (auto-compressed in the browser)
-- Admins get an Overview dashboard (stat tiles, open assignments, equipment totals,
-  per-rating breakdowns, technician activity) plus Sites / Pending / Approved / All
-  Surveys lists, and approve pending surveys from the detail view
+- Admins get a side-panel dashboard (Overview, Sites, Pending, Approved, All Surveys,
+  Technicians) with stat tiles, open-assignment and equipment charts, and technician
+  activity, and approve pending surveys from the detail view
+- Admins can add technician accounts (name, email, phone, password — with a
+  one-click password generator) and remove them from the **Technicians** panel
 - PWA manifest and service worker for installing on a phone
 
 ## Run Locally
@@ -57,3 +59,8 @@ up Supabase Storage (below) before using this for real fieldwork.
 4. Create a `survey-photos` storage bucket and upload photo files there instead of
    storing them as data URLs, inserting a `survey_photos` row per upload.
 5. Replace the arrays in `src/data/mockData.ts` with real Supabase auth + queries.
+6. The **Add Technician** flow currently creates a plain `User` record with a
+   plaintext password in local mock data — fine for a demo, but a real Supabase
+   setup can't create another person's login from the browser with the anon key.
+   Move it to a Supabase Edge Function that calls `supabase.auth.admin.createUser()`
+   with the service role key, then inserts the matching `profiles` row.

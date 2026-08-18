@@ -6,11 +6,12 @@ import {
   ClipboardList,
   LayoutDashboard,
   LayoutList,
-  Plus,
   PlusCircle,
+  Users,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { MobileNav } from './components/MobileNav';
+import { Sidebar } from './components/Sidebar';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { LoginPage } from './components/LoginPage';
 import { SurveyForm } from './components/SurveyForm';
@@ -19,12 +20,19 @@ import { SurveyModal } from './components/SurveyModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssignmentList } from './components/AssignmentList';
 import { AssignSiteModal } from './components/AssignSiteModal';
-import { surveys as initialSurveys, siteAssignments as initialAssignments, users } from './data/mockData';
+import { TechnicianManager } from './components/TechnicianManager';
+import { AddTechnicianModal } from './components/AddTechnicianModal';
+import {
+  surveys as initialSurveys,
+  siteAssignments as initialAssignments,
+  users as defaultUsers,
+} from './data/mockData';
 import type { SiteAssignment, Survey, SurveyStatus, User } from './types';
 
 const SESSION_KEY = 'kibs-connect-session';
 const SURVEYS_KEY = 'kibs-connect-surveys';
 const ASSIGNMENTS_KEY = 'kibs-connect-assignments';
+const USERS_KEY = 'kibs-connect-users';
 
 function formatDate(value: string) {
   if (!value) return '';
@@ -51,9 +59,10 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 type TechnicianTab = 'sites' | 'new' | 'mine';
-type AdminTab = 'overview' | 'sites' | 'pending' | 'approved' | 'all';
+type AdminTab = 'overview' | 'sites' | 'technicians' | 'pending' | 'approved' | 'all';
 
 export default function App() {
+  const [allUsers, setAllUsers] = useState<User[]>(() => loadFromStorage(USERS_KEY, defaultUsers));
   const [user, setUser] = useState<User | null>(() => loadFromStorage(SESSION_KEY, null));
   const [surveys, setSurveys] = useState<Survey[]>(() => loadFromStorage(SURVEYS_KEY, initialSurveys));
   const [assignments, setAssignments] = useState<SiteAssignment[]>(() =>
@@ -65,6 +74,16 @@ export default function App() {
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
   const [prefillAssignment, setPrefillAssignment] = useState<SiteAssignment | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showAddTechnicianModal, setShowAddTechnicianModal] = useState(false);
+  const [technicianError, setTechnicianError] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(USERS_KEY, JSON.stringify(allUsers));
+    } catch {
+      // Local storage full — user list stays in memory for this session.
+    }
+  }, [allUsers]);
 
   useEffect(() => {
     if (user) {
@@ -102,10 +121,11 @@ export default function App() {
 
   const pendingSurveys = useMemo(() => surveys.filter((survey) => survey.status === 'pending'), [surveys]);
   const approvedSurveys = useMemo(() => surveys.filter((survey) => survey.status === 'approved'), [surveys]);
-  const technicians = useMemo(() => users.filter((u) => u.role === 'technician'), []);
+  const technicians = useMemo(() => allUsers.filter((u) => u.role === 'technician'), [allUsers]);
+  const openAssignments = useMemo(() => assignments.filter((a) => a.status === 'assigned'), [assignments]);
 
   if (!user) {
-    return <LoginPage onLogin={setUser} />;
+    return <LoginPage users={allUsers} onLogin={setUser} />;
   }
 
   function handleLogout() {
@@ -163,6 +183,22 @@ export default function App() {
     if (survey) setActiveSurvey(survey);
   }
 
+  function handleCreateTechnician(technician: User) {
+    setAllUsers((prev) => [...prev, technician]);
+  }
+
+  function handleRemoveTechnician(technicianId: string) {
+    const hasOpenWork = assignments.some(
+      (a) => a.technicianId === technicianId && a.status === 'assigned'
+    );
+    if (hasOpenWork) {
+      setTechnicianError('Cancel or reassign this technician\'s open site assignments before removing them.');
+      window.setTimeout(() => setTechnicianError(''), 4000);
+      return;
+    }
+    setAllUsers((prev) => prev.filter((u) => u.id !== technicianId));
+  }
+
   const adminVisibleSurveys =
     adminTab === 'pending' ? pendingSurveys : adminTab === 'approved' ? approvedSurveys : surveys;
 
@@ -174,10 +210,11 @@ export default function App() {
 
   const adminNavItems = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: LayoutDashboard },
-    { id: 'sites' as AdminTab, label: 'Sites', icon: Building2 },
-    { id: 'pending' as AdminTab, label: 'Pending', icon: Clock },
+    { id: 'sites' as AdminTab, label: 'Sites', icon: Building2, count: openAssignments.length },
+    { id: 'pending' as AdminTab, label: 'Pending', icon: Clock, count: pendingSurveys.length },
     { id: 'approved' as AdminTab, label: 'Approved', icon: CheckCircle2 },
-    { id: 'all' as AdminTab, label: 'All', icon: LayoutList },
+    { id: 'all' as AdminTab, label: 'All Surveys', icon: LayoutList },
+    { id: 'technicians' as AdminTab, label: 'Technicians', icon: Users },
   ];
 
   return (
@@ -189,93 +226,75 @@ export default function App() {
         setMobileMenuOpen={setMobileMenuOpen}
       />
 
-      <main className="mx-auto max-w-2xl px-3 py-4 sm:px-6 sm:py-6">
-        {user.role === 'technician' ? (
-          <>
-            <div className="mb-4 hidden gap-2 sm:flex">
-              {technicianNavItems.map((item) => {
-                const Icon = item.icon;
-                const active = technicianTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTechnicianTab(item.id)}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                      active
-                        ? 'bg-kibs-deepGreen text-white shadow-xs'
-                        : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
+      {user.role === 'technician' ? (
+        <main className="mx-auto max-w-2xl px-3 py-4 sm:px-6 sm:py-6">
+          <div className="mb-4 hidden gap-2 sm:flex">
+            {technicianNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = technicianTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setTechnicianTab(item.id)}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
+                    active
+                      ? 'bg-kibs-deepGreen text-white shadow-xs'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
 
-            {technicianTab === 'sites' && (
-              <AssignmentList
-                assignments={myAssignments}
-                formatDate={formatDate}
-                emptyMessage="No sites have been assigned to you yet."
-                onStartSurvey={handleStartSurvey}
-                onViewSurvey={handleViewSurvey}
-              />
-            )}
-            {technicianTab === 'new' && (
-              <SurveyForm
-                technician={user}
-                nextSurveyNumber={nextSurveyNumber(surveys)}
-                assignment={prefillAssignment}
-                onClearAssignment={() => setPrefillAssignment(null)}
-                onSubmit={handleCreateSurvey}
-              />
-            )}
-            {technicianTab === 'mine' && (
-              <SurveyList
-                surveys={mySurveys}
-                onSelect={setActiveSurvey}
-                emptyMessage="You haven't submitted any surveys yet."
-                formatDate={formatDate}
-              />
-            )}
+          {technicianTab === 'sites' && (
+            <AssignmentList
+              assignments={myAssignments}
+              formatDate={formatDate}
+              emptyMessage="No sites have been assigned to you yet."
+              onStartSurvey={handleStartSurvey}
+              onViewSurvey={handleViewSurvey}
+            />
+          )}
+          {technicianTab === 'new' && (
+            <SurveyForm
+              technician={user}
+              nextSurveyNumber={nextSurveyNumber(surveys)}
+              assignment={prefillAssignment}
+              onClearAssignment={() => setPrefillAssignment(null)}
+              onSubmit={handleCreateSurvey}
+            />
+          )}
+          {technicianTab === 'mine' && (
+            <SurveyList
+              surveys={mySurveys}
+              onSelect={setActiveSurvey}
+              emptyMessage="You haven't submitted any surveys yet."
+              formatDate={formatDate}
+            />
+          )}
 
-            <MobileNav items={technicianNavItems} activeId={technicianTab} onChange={setTechnicianTab} />
-          </>
-        ) : (
-          <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="hidden gap-2 sm:flex">
-                {adminNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = adminTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setAdminTab(item.id)}
-                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                        active
-                          ? 'bg-kibs-deepGreen text-white shadow-xs'
-                          : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </button>
-                  );
-                })}
+          <MobileNav items={technicianNavItems} activeId={technicianTab} onChange={setTechnicianTab} />
+        </main>
+      ) : (
+        <div className="mx-auto flex max-w-6xl gap-6 px-3 py-4 sm:px-6 sm:py-6">
+          <Sidebar
+            items={adminNavItems}
+            activeId={adminTab}
+            onChange={setAdminTab}
+            onAddSite={() => setShowAssignModal(true)}
+            onAddTechnician={() => setShowAddTechnicianModal(true)}
+          />
+
+          <main className="min-w-0 flex-1">
+            {technicianError && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-700">
+                {technicianError}
               </div>
-              <button
-                type="button"
-                onClick={() => setShowAssignModal(true)}
-                className="ml-auto flex items-center gap-1.5 rounded-xl bg-kibs-deepGreen px-3.5 py-2 text-xs font-black text-white transition hover:bg-emerald-700 sm:ml-0"
-              >
-                <Plus className="h-4 w-4" />
-                Add Site
-              </button>
-            </div>
+            )}
 
             {adminTab === 'overview' && (
               <AdminDashboard
@@ -291,10 +310,18 @@ export default function App() {
               <AssignmentList
                 assignments={assignments}
                 formatDate={formatDate}
-                emptyMessage="No sites assigned yet. Tap Add Site to assign one."
+                emptyMessage="No sites assigned yet. Use Add Site to assign one."
                 showTechnician
                 onCancel={handleCancelAssignment}
                 onViewSurvey={handleViewSurvey}
+              />
+            )}
+            {adminTab === 'technicians' && (
+              <TechnicianManager
+                technicians={technicians}
+                surveys={surveys}
+                assignments={assignments}
+                onRemove={handleRemoveTechnician}
               />
             )}
             {(adminTab === 'pending' || adminTab === 'approved' || adminTab === 'all') && (
@@ -306,11 +333,11 @@ export default function App() {
                 formatDate={formatDate}
               />
             )}
+          </main>
 
-            <MobileNav items={adminNavItems} activeId={adminTab} onChange={setAdminTab} />
-          </>
-        )}
-      </main>
+          <MobileNav items={adminNavItems} activeId={adminTab} onChange={setAdminTab} />
+        </div>
+      )}
 
       <SurveyModal
         survey={activeSurvey}
@@ -321,13 +348,21 @@ export default function App() {
       />
 
       {user.role === 'admin' && (
-        <AssignSiteModal
-          open={showAssignModal}
-          admin={user}
-          technicians={technicians}
-          onClose={() => setShowAssignModal(false)}
-          onCreate={handleCreateAssignment}
-        />
+        <>
+          <AssignSiteModal
+            open={showAssignModal}
+            admin={user}
+            technicians={technicians}
+            onClose={() => setShowAssignModal(false)}
+            onCreate={handleCreateAssignment}
+          />
+          <AddTechnicianModal
+            open={showAddTechnicianModal}
+            existingUsers={allUsers}
+            onClose={() => setShowAddTechnicianModal(false)}
+            onCreate={handleCreateTechnician}
+          />
+        </>
       )}
 
       <PwaInstallPrompt />
