@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { LogIn, Lock, Mail } from 'lucide-react';
 import type { User } from '../types';
 import { signIn } from '../lib/api';
-import { KibsLogo } from './KibsLogo';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -32,9 +31,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
         <div className="flex flex-col items-center text-center">
-          <div className="w-full max-w-[280px]">
-            <KibsLogo variant="full" className="w-full justify-center" />
-          </div>
+          <img
+            src="/kibs-logo-desktop.png"
+            alt="Kibs Systems Ltd"
+            className="h-16 w-auto max-w-[280px] object-contain"
+          />
           <h1 className="mt-4 text-xl font-black text-slate-950">Kibs Connect</h1>
           <p className="mt-1 text-xs font-medium text-slate-500">
             Sign in to conduct site surveys and manage reports.

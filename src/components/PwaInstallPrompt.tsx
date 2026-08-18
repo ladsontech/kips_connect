@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
-import { KibsLogo } from './KibsLogo';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -108,7 +107,11 @@ export function PwaInstallPrompt() {
   return (
     <div className="fixed inset-x-2 bottom-14 z-40 rounded-2xl border border-emerald-200 bg-white p-3 shadow-xl sm:bottom-4 sm:left-auto sm:right-4 sm:max-w-sm">
       <div className="flex items-center gap-3">
-        <KibsLogo variant="badge" badgeSize={44} className="shrink-0" />
+        <img
+          src="/kibs-logo-mobile.png"
+          alt=""
+          className="h-11 w-11 shrink-0 rounded-xl object-contain"
+        />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-black text-slate-950">Install Kibs Connect</h2>
           <p className="mt-0.5 text-xs leading-snug text-slate-600">

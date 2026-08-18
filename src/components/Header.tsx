@@ -2,8 +2,6 @@ import React from 'react';
 import { LogOut, Menu, ShieldCheck, UserRound, X } from 'lucide-react';
 import type { User } from '../types';
 
-import { KibsLogo } from './KibsLogo';
-
 interface HeaderProps {
   user: User;
   onLogout: () => void;
@@ -24,8 +22,12 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-6 sm:py-2.5">
         <div className="flex items-center gap-3">
           {/* Mobile Badge View */}
-          <div className="flex items-center gap-2.5 sm:hidden">
-            <KibsLogo variant="badge" badgeSize={36} />
+          <div className="flex items-center gap-2 sm:hidden">
+            <img
+              src="/kibs-logo-mobile.png"
+              alt="Kibs Systems Ltd"
+              className="h-9 w-auto max-w-[50px] object-contain"
+            />
             <div>
               <span className="text-sm font-black tracking-tight text-slate-900">Kibs Connect</span>
               <p className="text-[10px] font-semibold text-slate-500">Survey Portal</p>
@@ -34,9 +36,11 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Desktop Full Logo View */}
           <div className="hidden items-center gap-3.5 sm:flex">
-            <div className="h-12 py-0.5">
-              <KibsLogo variant="full" className="h-full" />
-            </div>
+            <img
+              src="/kibs-logo-desktop.png"
+              alt="Kibs Systems Ltd"
+              className="h-11 w-auto max-w-[320px] object-contain"
+            />
             <div className="border-l border-slate-200 pl-3">
               <span className="font-extrabold text-slate-900 tracking-tight text-base">Kibs Connect</span>
               <p className="text-xs text-slate-500 font-medium">Site Survey &amp; Report Portal</p>
