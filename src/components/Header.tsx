@@ -21,32 +21,62 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-6 sm:py-2.5">
         <div className="flex items-center gap-3">
-          {/* Mobile — PWA style app icon logo */}
-          <div className="flex items-center gap-2 sm:hidden">
-            <img
-              src="/kibs-logo-mobile.png"
-              alt="Kibs Systems Ltd"
-              className="h-9 w-9 shrink-0 rounded-xl object-cover"
-            />
-            <div>
-              <span className="text-sm font-black tracking-tight text-slate-900">Kibs Connect</span>
-              <p className="text-[10px] font-semibold text-slate-500">Survey Portal</p>
-            </div>
+          {/* Crisp, modern vector KSL badge */}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 p-1.5 border border-emerald-100/80 shadow-xs">
+            <svg viewBox="0 0 100 100" className="h-full w-full" fill="none">
+              <circle cx="50" cy="50" r="48" fill="#16a34a" />
+              <g transform="translate(14, 13) scale(0.95)">
+                <path
+                  d="M20 16 C22 28, 22 46, 17 62 C16 65, 17 68, 21 66 C26 63, 29 48, 30 38 C32 30, 31 22, 28 17 C26 13, 20 13, 20 16 Z"
+                  fill="#09090b"
+                />
+                <path
+                  d="M28 35 C33 30, 42 22, 53 17 C57 15, 60 18, 56 22 C48 28, 39 36, 31 43 Z"
+                  fill="#09090b"
+                />
+                <path
+                  d="M26 39 C34 45, 45 55, 52 64 C55 68, 51 70, 47 67 C41 61, 32 50, 24 43 Z"
+                  fill="#09090b"
+                />
+                <text
+                  x="39"
+                  y="42"
+                  fill="#ffffff"
+                  fontFamily="system-ui, -apple-system, sans-serif"
+                  fontWeight="900"
+                  fontSize="22"
+                  textAnchor="middle"
+                >
+                  S
+                </text>
+                <text
+                  x="42"
+                  y="60"
+                  fill="#ffffff"
+                  fontFamily="system-ui, -apple-system, sans-serif"
+                  fontWeight="900"
+                  fontSize="18"
+                  textAnchor="middle"
+                >
+                  L
+                </text>
+              </g>
+            </svg>
           </div>
 
-          {/* Desktop Full Logo */}
-          <div className="hidden items-center gap-3.5 sm:flex">
-            <div className="h-10 overflow-hidden flex items-center">
-              <img
-                src="/kibs-logo-desktop.png"
-                alt="Kibs Systems Ltd"
-                className="h-[180%] w-auto max-w-none object-contain"
-              />
+          {/* Clean App Identity */}
+          <div>
+            <div className="flex items-center gap-2 leading-none">
+              <span className="font-black text-slate-900 tracking-tight text-base sm:text-lg">
+                Kibs Connect
+              </span>
+              <span className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
+                Portal
+              </span>
             </div>
-            <div className="border-l border-slate-200 pl-3">
-              <span className="font-extrabold text-slate-900 tracking-tight text-base">Kibs Connect</span>
-              <p className="text-xs text-slate-500 font-medium">Site Survey &amp; Report Portal</p>
-            </div>
+            <p className="mt-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Site Survey &amp; Report Management
+            </p>
           </div>
         </div>
 
