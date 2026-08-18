@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Hardcoded defaults so the app works on any host (Vercel, etc.) without
+// needing environment variables.  The anon / publishable key is designed to
+// be public and is safe to include in client-side code.
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL || 'https://yevxhnfffzshqqznlqwc.supabase.co';
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_t6mx-SpLEG3pRZ5R8Bpewg_3sxbcVbq';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
