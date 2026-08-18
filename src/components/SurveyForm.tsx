@@ -17,19 +17,24 @@ import {
   type CctvCategory,
   type FloodlightCategory,
   type SiteAssignment,
-  type Survey,
-  type SurveyPhoto,
   type SurveyType,
   type User,
 } from '../types';
-import { compressImage, fileToDataUrl } from '../lib/imageCompression';
+import type { SurveyDraft } from '../lib/api';
+import { compressImage } from '../lib/imageCompression';
+
+interface PendingPhoto {
+  id: string;
+  file: File;
+  previewUrl: string;
+  sizeKb: number;
+}
 
 interface SurveyFormProps {
   technician: User;
-  nextSurveyNumber: string;
   assignment?: SiteAssignment | null;
   onClearAssignment?: () => void;
-  onSubmit: (survey: Survey) => void;
+  onSubmit: (draft: SurveyDraft) => Promise<void>;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -37,7 +42,6 @@ const MAX_PHOTOS = 6;
 
 export const SurveyForm: React.FC<SurveyFormProps> = ({
   technician,
-  nextSurveyNumber,
   assignment,
   onClearAssignment,
   onSubmit,
@@ -52,10 +56,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
   const [cctv, setCctv] = useState(emptyCctvCounts());
   const [floodlights, setFloodlights] = useState(emptyFloodlightCounts());
   const [solarPanels, setSolarPanels] = useState(0);
-  const [photos, setPhotos] = useState<SurveyPhoto[]>([]);
+  const [photos, setPhotos] = useState<PendingPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   function resetForm() {
     setType('new_site');
@@ -68,6 +74,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
     setCctv(emptyCctvCounts());
     setFloodlights(emptyFloodlightCounts());
     setSolarPanels(0);
+    photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setPhotos([]);
     setPhotoError('');
   }
@@ -102,11 +109,10 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
       const compressed = await Promise.all(
         accepted.map(async (file) => {
           const result = await compressImage(file);
-          const dataUrl = await fileToDataUrl(result.file);
-          const photo: SurveyPhoto = {
+          const photo: PendingPhoto = {
             id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            name: file.name,
-            dataUrl,
+            file: result.file,
+            previewUrl: URL.createObjectURL(result.file),
             sizeKb: result.compressedSizeKb,
           };
           return photo;
@@ -124,38 +130,44 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
   }
 
   function removePhoto(id: string) {
-    setPhotos((prev) => prev.filter((photo) => photo.id !== id));
+    setPhotos((prev) => {
+      const target = prev.find((photo) => photo.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((photo) => photo.id !== id);
+    });
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    setSubmitError('');
+    setSubmitting(true);
 
-    const survey: Survey = {
-      id: `survey-${Date.now()}`,
-      surveyNumber: nextSurveyNumber,
+    const draft: SurveyDraft = {
       type,
       siteName: siteName.trim(),
       siteLocation: siteLocation.trim(),
       contactPerson: contactPerson.trim(),
       contactPhone: contactPhone.trim(),
-      technicianId: technician.id,
-      technicianName: technician.name,
       surveyDate,
       notes: notes.trim(),
       cctv,
       floodlights,
       solarPanels,
-      photos,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
+      photoFiles: photos.map((photo) => photo.file),
       assignmentId: assignment?.id,
     };
 
-    onSubmit(survey);
-    resetForm();
-    onClearAssignment?.();
-    setSubmitted(true);
-    window.setTimeout(() => setSubmitted(false), 3000);
+    try {
+      await onSubmit(draft);
+      resetForm();
+      onClearAssignment?.();
+      setSubmitted(true);
+      window.setTimeout(() => setSubmitted(false), 3000);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Could not submit the survey. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -164,6 +176,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
         <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700 animate-fade-in">
           <CheckCircle2 className="h-4 w-4" />
           Survey submitted for approval.
+        </div>
+      )}
+
+      {submitError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-700">
+          {submitError}
         </div>
       )}
 
@@ -346,12 +364,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
             {photos.map((photo) => (
               <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                <img src={photo.dataUrl} alt={photo.name} className="h-full w-full object-cover" />
+                <img src={photo.previewUrl} alt={photo.file.name} className="h-full w-full object-cover" />
                 <button
                   type="button"
                   onClick={() => removePhoto(photo.id)}
                   className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white transition hover:bg-red-600"
-                  aria-label={`Remove ${photo.name}`}
+                  aria-label={`Remove ${photo.file.name}`}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -401,10 +419,11 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
 
       <button
         type="submit"
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3.5 text-sm font-black text-white transition hover:bg-emerald-700"
+        disabled={submitting}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <CheckCircle2 className="h-4 w-4" />
-        Submit Survey
+        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+        {submitting ? 'Submitting…' : 'Submit Survey'}
       </button>
     </form>
   );

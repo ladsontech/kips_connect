@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Send, X } from 'lucide-react';
-import type { SiteAssignment, SurveyType, User } from '../types';
+import { Loader2, Send, X } from 'lucide-react';
+import type { SurveyType, User } from '../types';
+import type { AssignmentDraft } from '../lib/api';
 
 interface AssignSiteModalProps {
   open: boolean;
   admin: User;
   technicians: User[];
   onClose: () => void;
-  onCreate: (assignment: SiteAssignment) => void;
+  onCreate: (draft: AssignmentDraft) => Promise<void>;
 }
 
 export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
@@ -24,6 +25,8 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
   const [type, setType] = useState<SurveyType>('new_site');
   const [technicianId, setTechnicianId] = useState(technicians[0]?.id ?? '');
   const [instructions, setInstructions] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
 
@@ -35,40 +38,49 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
     setType('new_site');
     setTechnicianId(technicians[0]?.id ?? '');
     setInstructions('');
+    setError('');
+    setSubmitting(false);
   }
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    const technician = technicians.find((t) => t.id === technicianId);
-    if (!technician) return;
-
-    const assignment: SiteAssignment = {
-      id: `assign-${Date.now()}`,
-      siteName: siteName.trim(),
-      siteLocation: siteLocation.trim(),
-      contactPerson: contactPerson.trim(),
-      contactPhone: contactPhone.trim(),
-      type,
-      instructions: instructions.trim(),
-      technicianId: technician.id,
-      technicianName: technician.name,
-      assignedBy: admin.name,
-      assignedAt: new Date().toISOString(),
-      status: 'assigned',
-    };
-
-    onCreate(assignment);
+  function handleClose() {
     resetForm();
     onClose();
   }
 
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const technician = technicians.find((t) => t.id === technicianId);
+    if (!technician) return;
+
+    setError('');
+    setSubmitting(true);
+    try {
+      await onCreate({
+        siteName: siteName.trim(),
+        siteLocation: siteLocation.trim(),
+        contactPerson: contactPerson.trim(),
+        contactPhone: contactPhone.trim(),
+        type,
+        instructions: instructions.trim(),
+        technicianId: technician.id,
+        technicianName: technician.name,
+      });
+      resetForm();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create this assignment.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs sm:items-center sm:p-4 animate-fade-in">
-      <div className="fixed inset-0" onClick={onClose} aria-label="Close modal backdrop" />
+      <div className="fixed inset-0" onClick={handleClose} aria-label="Close modal backdrop" />
       <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-5 shadow-2xl animate-slide-up sm:rounded-2xl sm:p-6">
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200"
         >
           <X className="h-4 w-4" />
@@ -176,13 +188,15 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
             />
           </div>
 
+          {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+
           <button
             type="submit"
-            disabled={technicians.length === 0}
+            disabled={technicians.length === 0 || submitting}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Send className="h-4 w-4" />
-            Assign Site
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {submitting ? 'Assigning…' : 'Assign Site'}
           </button>
         </form>
       </div>

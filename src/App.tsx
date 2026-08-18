@@ -6,6 +6,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LayoutList,
+  Loader2,
   PlusCircle,
   Users,
 } from 'lucide-react';
@@ -22,17 +23,24 @@ import { AssignmentList } from './components/AssignmentList';
 import { AssignSiteModal } from './components/AssignSiteModal';
 import { TechnicianManager } from './components/TechnicianManager';
 import { AddTechnicianModal } from './components/AddTechnicianModal';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 import {
-  surveys as initialSurveys,
-  siteAssignments as initialAssignments,
-  users as defaultUsers,
-} from './data/mockData';
-import type { SiteAssignment, Survey, SurveyStatus, User } from './types';
-
-const SESSION_KEY = 'kibs-connect-session';
-const SURVEYS_KEY = 'kibs-connect-surveys';
-const ASSIGNMENTS_KEY = 'kibs-connect-assignments';
-const USERS_KEY = 'kibs-connect-users';
+  approveSurvey,
+  cancelAssignment,
+  createAssignment,
+  createSurvey,
+  createTechnician,
+  deleteTechnician,
+  fetchAssignments,
+  fetchProfile,
+  fetchSurveys,
+  fetchTechnicians,
+  signOut,
+  type AssignmentDraft,
+  type CreateTechnicianInput,
+  type SurveyDraft,
+} from './lib/api';
+import type { SiteAssignment, Survey, User } from './types';
 
 function formatDate(value: string) {
   if (!value) return '';
@@ -41,33 +49,32 @@ function formatDate(value: string) {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function nextSurveyNumber(surveys: Survey[]) {
-  const highest = surveys.reduce((max, survey) => {
-    const num = Number(survey.surveyNumber.replace(/\D/g, ''));
-    return Number.isFinite(num) ? Math.max(max, num) : max;
-  }, 0);
-  return `SV-${String(highest + 1).padStart(4, '0')}`;
-}
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const stored = localStorage.getItem(key);
-    return stored ? (JSON.parse(stored) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 type TechnicianTab = 'sites' | 'new' | 'mine';
 type AdminTab = 'overview' | 'sites' | 'technicians' | 'pending' | 'approved' | 'all';
 
-export default function App() {
-  const [allUsers, setAllUsers] = useState<User[]>(() => loadFromStorage(USERS_KEY, defaultUsers));
-  const [user, setUser] = useState<User | null>(() => loadFromStorage(SESSION_KEY, null));
-  const [surveys, setSurveys] = useState<Survey[]>(() => loadFromStorage(SURVEYS_KEY, initialSurveys));
-  const [assignments, setAssignments] = useState<SiteAssignment[]>(() =>
-    loadFromStorage(ASSIGNMENTS_KEY, initialAssignments)
+function ConfigNotice() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+        <h1 className="text-lg font-black text-amber-900">Supabase isn't configured yet</h1>
+        <p className="mt-2 text-sm text-amber-800">
+          Add <code className="rounded bg-amber-100 px-1.5 py-0.5">VITE_SUPABASE_URL</code> and{' '}
+          <code className="rounded bg-amber-100 px-1.5 py-0.5">VITE_SUPABASE_ANON_KEY</code> to a{' '}
+          <code className="rounded bg-amber-100 px-1.5 py-0.5">.env.local</code> file and restart the app.
+        </p>
+      </div>
+    </div>
   );
+}
+
+export default function App() {
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [assignments, setAssignments] = useState<SiteAssignment[]>([]);
+  const [technicians, setTechnicians] = useState<User[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [technicianTab, setTechnicianTab] = useState<TechnicianTab>('sites');
   const [adminTab, setAdminTab] = useState<AdminTab>('overview');
@@ -75,39 +82,75 @@ export default function App() {
   const [prefillAssignment, setPrefillAssignment] = useState<SiteAssignment | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showAddTechnicianModal, setShowAddTechnicianModal] = useState(false);
-  const [technicianError, setTechnicianError] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(USERS_KEY, JSON.stringify(allUsers));
-    } catch {
-      // Local storage full — user list stays in memory for this session.
-    }
-  }, [allUsers]);
+  function flashError(message: string) {
+    setActionError(message);
+    window.setTimeout(() => setActionError(''), 4000);
+  }
 
+  // Restore the signed-in user from the Supabase session on load, and keep
+  // this state in sync if the session ends elsewhere (e.g. token expiry).
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(SESSION_KEY);
+    if (!isSupabaseConfigured) {
+      setSessionLoading(false);
+      return;
     }
-  }, [user]);
+    let active = true;
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(SURVEYS_KEY, JSON.stringify(surveys));
-    } catch {
-      // Local storage full (large photo attachments) — surveys stay in memory for this session.
-    }
-  }, [surveys]);
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      if (data.session) {
+        const profile = await fetchProfile(data.session.user.id);
+        if (active) setUser(profile);
+      }
+      if (active) setSessionLoading(false);
+    });
 
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) setUser(null);
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load surveys/assignments/(technicians for admins) whenever a user signs in.
   useEffect(() => {
-    try {
-      localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(assignments));
-    } catch {
-      // Local storage full — assignments stay in memory for this session.
+    if (!user) {
+      setSurveys([]);
+      setAssignments([]);
+      setTechnicians([]);
+      return;
     }
-  }, [assignments]);
+
+    let active = true;
+    setDataLoading(true);
+    setLoadError('');
+
+    (async () => {
+      try {
+        const [surveysData, assignmentsData] = await Promise.all([fetchSurveys(), fetchAssignments()]);
+        if (!active) return;
+        setSurveys(surveysData);
+        setAssignments(assignmentsData);
+        if (user.role === 'admin') {
+          const techs = await fetchTechnicians();
+          if (active) setTechnicians(techs);
+        }
+      } catch (err) {
+        if (active) setLoadError(err instanceof Error ? err.message : 'Could not load data from Supabase.');
+      } finally {
+        if (active) setDataLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const mySurveys = useMemo(
     () => (user ? surveys.filter((survey) => survey.technicianId === user.id) : []),
@@ -121,25 +164,39 @@ export default function App() {
 
   const pendingSurveys = useMemo(() => surveys.filter((survey) => survey.status === 'pending'), [surveys]);
   const approvedSurveys = useMemo(() => surveys.filter((survey) => survey.status === 'approved'), [surveys]);
-  const technicians = useMemo(() => allUsers.filter((u) => u.role === 'technician'), [allUsers]);
   const openAssignments = useMemo(() => assignments.filter((a) => a.status === 'assigned'), [assignments]);
 
-  if (!user) {
-    return <LoginPage users={allUsers} onLogin={setUser} />;
+  if (!isSupabaseConfigured) {
+    return <ConfigNotice />;
   }
 
-  function handleLogout() {
+  if (sessionLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="h-6 w-6 animate-spin text-kibs-deepGreen" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage onLogin={setUser} />;
+  }
+
+  async function handleLogout() {
+    await signOut();
     setUser(null);
     setActiveSurvey(null);
     setPrefillAssignment(null);
   }
 
-  function handleCreateSurvey(survey: Survey) {
+  async function handleCreateSurvey(draft: SurveyDraft) {
+    if (!user) return;
+    const survey = await createSurvey(draft, user);
     setSurveys((prev) => [survey, ...prev]);
-    if (survey.assignmentId) {
+    if (draft.assignmentId) {
       setAssignments((prev) =>
         prev.map((assignment) =>
-          assignment.id === survey.assignmentId
+          assignment.id === draft.assignmentId
             ? { ...assignment, status: 'completed' as const, surveyId: survey.id }
             : assignment
         )
@@ -148,29 +205,41 @@ export default function App() {
     setTechnicianTab('mine');
   }
 
-  function handleApprove(surveyId: string) {
+  async function handleApprove(surveyId: string) {
     if (!user) return;
-    setSurveys((prev) =>
-      prev.map((survey) =>
-        survey.id === surveyId
-          ? {
-              ...survey,
-              status: 'approved' as SurveyStatus,
-              approvedBy: user.name,
-              approvedAt: new Date().toISOString(),
-            }
-          : survey
-      )
-    );
-    setActiveSurvey((prev) => (prev && prev.id === surveyId ? { ...prev, status: 'approved' } : prev));
+    try {
+      await approveSurvey(surveyId, user);
+      const approvedAt = new Date().toISOString();
+      setSurveys((prev) =>
+        prev.map((survey) =>
+          survey.id === surveyId
+            ? { ...survey, status: 'approved' as const, approvedBy: user.name, approvedAt }
+            : survey
+        )
+      );
+      setActiveSurvey((prev) =>
+        prev && prev.id === surveyId
+          ? { ...prev, status: 'approved' as const, approvedBy: user.name, approvedAt }
+          : prev
+      );
+    } catch (err) {
+      flashError(err instanceof Error ? err.message : 'Could not approve this survey.');
+    }
   }
 
-  function handleCreateAssignment(assignment: SiteAssignment) {
+  async function handleCreateAssignment(draft: AssignmentDraft) {
+    if (!user) return;
+    const assignment = await createAssignment(draft, user);
     setAssignments((prev) => [assignment, ...prev]);
   }
 
-  function handleCancelAssignment(assignmentId: string) {
-    setAssignments((prev) => prev.filter((assignment) => assignment.id !== assignmentId));
+  async function handleCancelAssignment(assignmentId: string) {
+    try {
+      await cancelAssignment(assignmentId);
+      setAssignments((prev) => prev.filter((assignment) => assignment.id !== assignmentId));
+    } catch (err) {
+      flashError(err instanceof Error ? err.message : 'Could not cancel this assignment.');
+    }
   }
 
   function handleStartSurvey(assignment: SiteAssignment) {
@@ -183,20 +252,26 @@ export default function App() {
     if (survey) setActiveSurvey(survey);
   }
 
-  function handleCreateTechnician(technician: User) {
-    setAllUsers((prev) => [...prev, technician]);
+  async function handleCreateTechnician(input: CreateTechnicianInput): Promise<User> {
+    const technician = await createTechnician(input);
+    setTechnicians((prev) => [...prev, technician].sort((a, b) => a.name.localeCompare(b.name)));
+    return technician;
   }
 
-  function handleRemoveTechnician(technicianId: string) {
+  async function handleRemoveTechnician(technicianId: string) {
     const hasOpenWork = assignments.some(
       (a) => a.technicianId === technicianId && a.status === 'assigned'
     );
     if (hasOpenWork) {
-      setTechnicianError('Cancel or reassign this technician\'s open site assignments before removing them.');
-      window.setTimeout(() => setTechnicianError(''), 4000);
+      flashError("Cancel or reassign this technician's open site assignments before removing them.");
       return;
     }
-    setAllUsers((prev) => prev.filter((u) => u.id !== technicianId));
+    try {
+      await deleteTechnician(technicianId);
+      setTechnicians((prev) => prev.filter((t) => t.id !== technicianId));
+    } catch (err) {
+      flashError(err instanceof Error ? err.message : 'Could not remove this technician.');
+    }
   }
 
   const adminVisibleSurveys =
@@ -226,7 +301,19 @@ export default function App() {
         setMobileMenuOpen={setMobileMenuOpen}
       />
 
-      {user.role === 'technician' ? (
+      {(actionError || loadError) && (
+        <div className="mx-auto mt-3 max-w-6xl px-3 sm:px-6">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-700">
+            {actionError || loadError}
+          </div>
+        </div>
+      )}
+
+      {dataLoading && surveys.length === 0 && assignments.length === 0 ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-5 w-5 animate-spin text-kibs-deepGreen" />
+        </div>
+      ) : user.role === 'technician' ? (
         <main className="mx-auto max-w-2xl px-3 py-4 sm:px-6 sm:py-6">
           <div className="mb-4 hidden gap-2 sm:flex">
             {technicianNavItems.map((item) => {
@@ -262,7 +349,6 @@ export default function App() {
           {technicianTab === 'new' && (
             <SurveyForm
               technician={user}
-              nextSurveyNumber={nextSurveyNumber(surveys)}
               assignment={prefillAssignment}
               onClearAssignment={() => setPrefillAssignment(null)}
               onSubmit={handleCreateSurvey}
@@ -290,12 +376,6 @@ export default function App() {
           />
 
           <main className="min-w-0 flex-1">
-            {technicianError && (
-              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-bold text-red-700">
-                {technicianError}
-              </div>
-            )}
-
             {adminTab === 'overview' && (
               <AdminDashboard
                 surveys={surveys}
@@ -358,7 +438,7 @@ export default function App() {
           />
           <AddTechnicianModal
             open={showAddTechnicianModal}
-            existingUsers={allUsers}
+            existingUsers={technicians}
             onClose={() => setShowAddTechnicianModal(false)}
             onCreate={handleCreateTechnician}
           />

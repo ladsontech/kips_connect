@@ -1,33 +1,30 @@
 import React, { useState } from 'react';
 import { LogIn, Lock, Mail } from 'lucide-react';
 import type { User } from '../types';
+import { signIn } from '../lib/api';
 
 interface LoginPageProps {
-  users: User[];
   onLogin: (user: User) => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ users, onLogin }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-
-    const match = users.find(
-      (user) =>
-        user.email.trim().toLowerCase() === email.trim().toLowerCase() &&
-        user.password === password
-    );
-
-    if (!match) {
-      setError('Incorrect email or password.');
-      return;
-    }
-
     setError('');
-    onLogin(match);
+    setLoading(true);
+    try {
+      const user = await signIn(email.trim(), password);
+      onLogin(user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sign in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -76,10 +73,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ users, onLogin }) => {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LogIn className="h-4 w-4" />
-            Sign In
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 

@@ -1,3 +1,7 @@
+-- Kibs Connect — Supabase schema (reference copy of what's applied to the
+-- live project). Run this against a fresh project via the SQL editor, or
+-- use the Supabase CLI/MCP migration tools, to reproduce the setup.
+
 create extension if not exists "pgcrypto";
 
 create type app_role as enum ('admin', 'technician');
@@ -6,9 +10,12 @@ create type survey_status as enum ('pending', 'approved');
 create type assignment_status as enum ('assigned', 'completed');
 
 -- One row per authenticated user (admin or technician). id matches auth.users.id.
+-- email is denormalized from auth.users (which PostgREST can't query directly)
+-- so the app can look up/display technician emails.
 create table profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   full_name text not null,
+  email text not null unique,
   role app_role not null default 'technician',
   phone text,
   created_at timestamptz not null default now(),
@@ -17,7 +24,9 @@ create table profiles (
 
 -- An admin-created site + technician assignment. The technician surveys the
 -- site (new install or maintenance) and, once submitted, the linked survey
--- row is stamped back onto this assignment.
+-- row is stamped back onto this assignment. technician_name/assigned_by_name
+-- are snapshotted at write time so history reads fine even if that login is
+-- later removed (technician_id/assigned_by go to NULL on account deletion).
 create table site_assignments (
   id uuid primary key default gen_random_uuid(),
   site_name text not null,
@@ -26,8 +35,10 @@ create table site_assignments (
   contact_phone text,
   type survey_type not null,
   instructions text,
-  technician_id uuid not null references profiles (id) on delete restrict,
-  assigned_by uuid references profiles (id),
+  technician_id uuid references profiles (id) on delete set null,
+  technician_name text,
+  assigned_by uuid references profiles (id) on delete set null,
+  assigned_by_name text,
   status assignment_status not null default 'assigned',
   survey_id uuid,
   created_at timestamptz not null default now()
@@ -38,17 +49,20 @@ create index site_assignments_status_idx on site_assignments (status);
 
 -- A technician-submitted site survey / maintenance visit / completion report.
 -- Equipment counts are stored as plain columns per rating so they're easy to
--- query and total in the admin dashboard.
+-- query and total in the admin dashboard. survey_number is auto-generated.
+create sequence survey_number_seq start 1;
+
 create table surveys (
   id uuid primary key default gen_random_uuid(),
-  survey_number text not null unique,
+  survey_number text not null unique default ('SV-' || lpad(nextval('survey_number_seq')::text, 4, '0')),
   type survey_type not null,
   site_name text not null,
   site_location text not null,
   contact_person text,
   contact_phone text,
   survey_date date not null default current_date,
-  technician_id uuid not null references profiles (id) on delete restrict,
+  technician_id uuid references profiles (id) on delete set null,
+  technician_name text,
   site_assignment_id uuid references site_assignments (id) on delete set null,
   notes text,
 
@@ -65,7 +79,8 @@ create table surveys (
   solar_panels integer not null default 0,
 
   status survey_status not null default 'pending',
-  approved_by uuid references profiles (id),
+  approved_by uuid references profiles (id) on delete set null,
+  approved_by_name text,
   approved_at timestamptz,
 
   created_at timestamptz not null default now(),
@@ -80,11 +95,12 @@ alter table site_assignments
   foreign key (survey_id) references surveys (id) on delete set null;
 
 -- Site photos attached to a survey. The frontend uploads the file to the
--- `survey-photos` storage bucket first, then inserts a row here pointing at it.
+-- public `survey-photos` storage bucket first, then inserts a row here
+-- pointing at it.
 create table survey_photos (
   id uuid primary key default gen_random_uuid(),
   survey_id uuid not null references surveys (id) on delete cascade,
-  uploaded_by uuid references profiles (id),
+  uploaded_by uuid references profiles (id) on delete set null,
   bucket text not null default 'survey-photos',
   object_path text not null,
   original_filename text,
@@ -110,6 +126,7 @@ $$;
 create or replace function touch_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at = now();
@@ -180,4 +197,31 @@ using (
     where surveys.id = survey_photos.survey_id
       and surveys.technician_id = auth.uid()
   )
+);
+
+-- Storage: a public bucket for survey photos (public so <img src> can load
+-- them directly by URL; paths are unguessable UUIDs, and only technicians/
+-- admins can ever obtain a path via the app). Only authenticated writes are
+-- allowed, scoped to the uploader's own folder.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('survey-photos', 'survey-photos', true, 8388608, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do nothing;
+
+create policy "Admins manage survey photo objects"
+on storage.objects for all
+using (bucket_id = 'survey-photos' and is_admin())
+with check (bucket_id = 'survey-photos' and is_admin());
+
+create policy "Technicians upload own survey photos"
+on storage.objects for insert
+with check (
+  bucket_id = 'survey-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create policy "Technicians read own survey photos"
+on storage.objects for select
+using (
+  bucket_id = 'survey-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
 );

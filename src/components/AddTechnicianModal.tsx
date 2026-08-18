@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Check, Copy, Dices, Eye, EyeOff, UserPlus, X } from 'lucide-react';
+import { Check, Copy, Dices, Eye, EyeOff, Loader2, UserPlus, X } from 'lucide-react';
 import type { User } from '../types';
 
 interface AddTechnicianModalProps {
   open: boolean;
   existingUsers: User[];
   onClose: () => void;
-  onCreate: (technician: User) => void;
+  onCreate: (input: { name: string; email: string; phone?: string; password: string }) => Promise<User>;
 }
 
 function generatePassword() {
@@ -30,8 +30,9 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [created, setCreated] = useState<User | null>(null);
+  const [created, setCreated] = useState<{ name: string; email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
 
@@ -44,6 +45,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
     setError('');
     setCreated(null);
     setCopied(false);
+    setSubmitting(false);
   }
 
   function handleClose() {
@@ -51,7 +53,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
     onClose();
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     const trimmedEmail = email.trim().toLowerCase();
@@ -65,18 +67,21 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
       return;
     }
 
-    const technician: User = {
-      id: `user-${Date.now()}`,
-      name: name.trim(),
-      email: trimmedEmail,
-      password: password.trim(),
-      role: 'technician',
-      phone: phone.trim() || undefined,
-    };
-
     setError('');
-    onCreate(technician);
-    setCreated(technician);
+    setSubmitting(true);
+    try {
+      await onCreate({
+        name: name.trim(),
+        email: trimmedEmail,
+        password: password.trim(),
+        phone: phone.trim() || undefined,
+      });
+      setCreated({ name: name.trim(), email: trimmedEmail, password: password.trim() });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the technician account.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleCopy() {
@@ -220,10 +225,11 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
 
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <UserPlus className="h-4 w-4" />
-                Create Technician Account
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                {submitting ? 'Creating…' : 'Create Technician Account'}
               </button>
             </form>
           </>

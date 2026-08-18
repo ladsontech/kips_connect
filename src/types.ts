@@ -4,7 +4,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password: string;
   role: Role;
   phone?: string;
 }
@@ -25,7 +24,7 @@ export type FloodlightCounts = Record<FloodlightCategory, number>;
 export interface SurveyPhoto {
   id: string;
   name: string;
-  dataUrl: string;
+  url: string;
   sizeKb: number;
 }
 

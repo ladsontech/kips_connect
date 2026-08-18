@@ -1,12 +1,13 @@
 import type { SiteAssignment, Survey, User } from '../types';
 
-// Demo accounts. Replace with Supabase auth + profiles once the backend is wired up.
+// Historical demo/seed data — the app now runs on live Supabase data (see
+// src/lib/api.ts). Kept here only as a reference for the original shape;
+// nothing in the app imports these arrays anymore.
 export const users: User[] = [
   {
     id: 'user-admin',
     name: 'Grace Namara',
     email: 'admin@kibs.com',
-    password: 'admin123',
     role: 'admin',
     phone: '+256 704 552 109',
   },
@@ -14,7 +15,6 @@ export const users: User[] = [
     id: 'user-musa',
     name: 'Musa Sserwadda',
     email: 'musa@kibs.com',
-    password: 'tech123',
     role: 'technician',
     phone: '+256 755 100 410',
   },
@@ -22,7 +22,6 @@ export const users: User[] = [
     id: 'user-peter',
     name: 'Peter Okello',
     email: 'peter@kibs.com',
-    password: 'tech123',
     role: 'technician',
     phone: '+256 706 320 883',
   },
@@ -30,7 +29,6 @@ export const users: User[] = [
     id: 'user-asha',
     name: 'Asha Namukasa',
     email: 'asha@kibs.com',
-    password: 'tech123',
     role: 'technician',
     phone: '+256 781 244 915',
   },

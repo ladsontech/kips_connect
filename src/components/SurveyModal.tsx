@@ -142,10 +142,10 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
                   <button
                     key={photo.id}
                     type="button"
-                    onClick={() => setLightboxUrl(photo.dataUrl)}
+                    onClick={() => setLightboxUrl(photo.url)}
                     className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
                   >
-                    <img src={photo.dataUrl} alt={photo.name} className="h-full w-full object-cover" />
+                    <img src={photo.url} alt={photo.name} className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>
