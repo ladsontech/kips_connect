@@ -1,7 +1,7 @@
 {
   "name": "Kibs Connect",
   "short_name": "Kibs",
-  "description": "Security installation and support field service management for Kibs Systems.",
+  "description": "Site survey and maintenance reporting app for Kibs Systems technicians and admins.",
   "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",
