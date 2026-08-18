@@ -22,6 +22,13 @@ export type FloodlightCategory = (typeof FLOODLIGHT_CATEGORIES)[number];
 export type CctvCounts = Record<CctvCategory, number>;
 export type FloodlightCounts = Record<FloodlightCategory, number>;
 
+export interface SurveyPhoto {
+  id: string;
+  name: string;
+  dataUrl: string;
+  sizeKb: number;
+}
+
 export interface Survey {
   id: string;
   surveyNumber: string;
@@ -37,6 +44,7 @@ export interface Survey {
   cctv: CctvCounts;
   floodlights: FloodlightCounts;
   solarPanels: number;
+  photos: SurveyPhoto[];
   status: SurveyStatus;
   createdAt: string;
   approvedBy?: string;

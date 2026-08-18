@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, CheckCircle2, Lightbulb, Sun } from 'lucide-react';
+import { Camera, CheckCircle2, ImagePlus, Lightbulb, Loader2, Sun, X } from 'lucide-react';
 import {
   CCTV_CATEGORIES,
   FLOODLIGHT_CATEGORIES,
@@ -8,9 +8,11 @@ import {
   type CctvCategory,
   type FloodlightCategory,
   type Survey,
+  type SurveyPhoto,
   type SurveyType,
   type User,
 } from '../types';
+import { compressImage, fileToDataUrl } from '../lib/imageCompression';
 
 interface SurveyFormProps {
   technician: User;
@@ -19,6 +21,7 @@ interface SurveyFormProps {
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
+const MAX_PHOTOS = 6;
 
 export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNumber, onSubmit }) => {
   const [type, setType] = useState<SurveyType>('new_site');
@@ -31,6 +34,9 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
   const [cctv, setCctv] = useState(emptyCctvCounts());
   const [floodlights, setFloodlights] = useState(emptyFloodlightCounts());
   const [solarPanels, setSolarPanels] = useState(0);
+  const [photos, setPhotos] = useState<SurveyPhoto[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   function resetForm() {
@@ -44,6 +50,51 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
     setCctv(emptyCctvCounts());
     setFloodlights(emptyFloodlightCounts());
     setSolarPanels(0);
+    setPhotos([]);
+    setPhotoError('');
+  }
+
+  async function handlePhotoSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (files.length === 0) return;
+
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) {
+      setPhotoError(`You can attach up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
+
+    setPhotoError('');
+    setUploading(true);
+    try {
+      const accepted = files.slice(0, room);
+      const compressed = await Promise.all(
+        accepted.map(async (file) => {
+          const result = await compressImage(file);
+          const dataUrl = await fileToDataUrl(result.file);
+          const photo: SurveyPhoto = {
+            id: `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: file.name,
+            dataUrl,
+            sizeKb: result.compressedSizeKb,
+          };
+          return photo;
+        })
+      );
+      setPhotos((prev) => [...prev, ...compressed]);
+      if (files.length > room) {
+        setPhotoError(`Only added ${room} photo(s) — the ${MAX_PHOTOS} photo limit was reached.`);
+      }
+    } catch {
+      setPhotoError('One of those photos could not be processed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removePhoto(id: string) {
+    setPhotos((prev) => prev.filter((photo) => photo.id !== id));
   }
 
   function handleSubmit(event: React.FormEvent) {
@@ -64,6 +115,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
       cctv,
       floodlights,
       solarPanels,
+      photos,
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
@@ -222,6 +274,58 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
           onChange={(event) => setSolarPanels(Math.max(0, Number(event.target.value) || 0))}
           className="mt-2 w-32 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
         />
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <ImagePlus className="h-3.5 w-3.5" /> Site Photos
+          </p>
+          <span className="text-[10px] font-semibold text-slate-400">{photos.length}/{MAX_PHOTOS}</span>
+        </div>
+
+        {photos.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {photos.map((photo) => (
+              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                <img src={photo.dataUrl} alt={photo.name} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(photo.id)}
+                  className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white transition hover:bg-red-600"
+                  aria-label={`Remove ${photo.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {photos.length < MAX_PHOTOS && (
+          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 py-3 text-xs font-bold text-slate-500 transition hover:border-kibs-deepGreen hover:text-kibs-deepGreen">
+            {uploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Processing photos…
+              </>
+            ) : (
+              <>
+                <Camera className="h-4 w-4" /> Add site photos
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              capture="environment"
+              className="hidden"
+              disabled={uploading}
+              onChange={handlePhotoSelect}
+            />
+          </label>
+        )}
+
+        {photoError && <p className="mt-2 text-xs font-semibold text-red-600">{photoError}</p>}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, ChevronRight, Lightbulb, Sun } from 'lucide-react';
+import { Camera, ChevronRight, Images, Lightbulb, Sun } from 'lucide-react';
 import { totalCount, type Survey } from '../types';
 
 interface SurveyListProps {
@@ -67,6 +67,11 @@ export const SurveyList: React.FC<SurveyListProps> = ({
               <span className="flex items-center gap-1">
                 <Sun className="h-3 w-3 text-slate-400" /> {survey.solarPanels}
               </span>
+              {survey.photos.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <Images className="h-3 w-3 text-slate-400" /> {survey.photos.length}
+                </span>
+              )}
             </div>
           </div>
           <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />

@@ -52,6 +52,21 @@ create table surveys (
 create index surveys_technician_id_idx on surveys (technician_id);
 create index surveys_status_idx on surveys (status);
 
+-- Site photos attached to a survey. The frontend uploads the file to the
+-- `survey-photos` storage bucket first, then inserts a row here pointing at it.
+create table survey_photos (
+  id uuid primary key default gen_random_uuid(),
+  survey_id uuid not null references surveys (id) on delete cascade,
+  uploaded_by uuid references profiles (id),
+  bucket text not null default 'survey-photos',
+  object_path text not null,
+  original_filename text,
+  size_kb integer,
+  created_at timestamptz not null default now()
+);
+
+create index survey_photos_survey_id_idx on survey_photos (survey_id);
+
 create or replace function is_admin()
 returns boolean
 language sql
@@ -85,6 +100,7 @@ for each row execute function touch_updated_at();
 
 alter table profiles enable row level security;
 alter table surveys enable row level security;
+alter table survey_photos enable row level security;
 
 create policy "Admins can manage profiles"
 on profiles for all using (is_admin()) with check (is_admin());
@@ -102,3 +118,26 @@ with check (technician_id = auth.uid());
 create policy "Technicians can read their own surveys"
 on surveys for select
 using (technician_id = auth.uid());
+
+create policy "Admins can manage all survey photos"
+on survey_photos for all using (is_admin()) with check (is_admin());
+
+create policy "Technicians can attach photos to their own surveys"
+on survey_photos for insert
+with check (
+  exists (
+    select 1 from surveys
+    where surveys.id = survey_photos.survey_id
+      and surveys.technician_id = auth.uid()
+  )
+);
+
+create policy "Technicians can read photos on their own surveys"
+on survey_photos for select
+using (
+  exists (
+    select 1 from surveys
+    where surveys.id = survey_photos.survey_id
+      and surveys.technician_id = auth.uid()
+  )
+);

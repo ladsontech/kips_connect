@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Clock,
   ClipboardList,
+  LayoutDashboard,
   LayoutList,
   PlusCircle,
 } from 'lucide-react';
@@ -13,10 +14,12 @@ import { LoginPage } from './components/LoginPage';
 import { SurveyForm } from './components/SurveyForm';
 import { SurveyList } from './components/SurveyList';
 import { SurveyModal } from './components/SurveyModal';
+import { AdminDashboard } from './components/AdminDashboard';
 import { surveys as initialSurveys } from './data/mockData';
 import type { Survey, SurveyStatus, User } from './types';
 
 const SESSION_KEY = 'kibs-connect-session';
+const SURVEYS_KEY = 'kibs-connect-surveys';
 
 function formatDate(value: string) {
   if (!value) return '';
@@ -33,8 +36,17 @@ function nextSurveyNumber(surveys: Survey[]) {
   return `SV-${String(highest + 1).padStart(4, '0')}`;
 }
 
+function loadSurveys(): Survey[] {
+  try {
+    const stored = localStorage.getItem(SURVEYS_KEY);
+    return stored ? (JSON.parse(stored) as Survey[]) : initialSurveys;
+  } catch {
+    return initialSurveys;
+  }
+}
+
 type TechnicianTab = 'new' | 'mine';
-type AdminTab = 'pending' | 'approved' | 'all';
+type AdminTab = 'overview' | 'pending' | 'approved' | 'all';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -45,10 +57,10 @@ export default function App() {
       return null;
     }
   });
-  const [surveys, setSurveys] = useState<Survey[]>(initialSurveys);
+  const [surveys, setSurveys] = useState<Survey[]>(loadSurveys);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [technicianTab, setTechnicianTab] = useState<TechnicianTab>('new');
-  const [adminTab, setAdminTab] = useState<AdminTab>('pending');
+  const [adminTab, setAdminTab] = useState<AdminTab>('overview');
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
 
   useEffect(() => {
@@ -58,6 +70,14 @@ export default function App() {
       localStorage.removeItem(SESSION_KEY);
     }
   }, [user]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SURVEYS_KEY, JSON.stringify(surveys));
+    } catch {
+      // Local storage full (large photo attachments) — surveys stay in memory for this session.
+    }
+  }, [surveys]);
 
   const mySurveys = useMemo(
     () => (user ? surveys.filter((survey) => survey.technicianId === user.id) : []),
@@ -107,6 +127,7 @@ export default function App() {
   ];
 
   const adminNavItems = [
+    { id: 'overview' as AdminTab, label: 'Overview', icon: LayoutDashboard },
     { id: 'pending' as AdminTab, label: 'Pending', icon: Clock },
     { id: 'approved' as AdminTab, label: 'Approved', icon: CheckCircle2 },
     { id: 'all' as AdminTab, label: 'All Surveys', icon: LayoutList },
@@ -165,21 +186,6 @@ export default function App() {
           </>
         ) : (
           <>
-            <div className="mb-4 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center">
-                <p className="text-xl font-black text-slate-950">{surveys.length}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Total</p>
-              </div>
-              <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-center">
-                <p className="text-xl font-black text-red-700">{pendingSurveys.length}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-red-500">Pending</p>
-              </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-center">
-                <p className="text-xl font-black text-emerald-700">{approvedSurveys.length}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Approved</p>
-              </div>
-            </div>
-
             <div className="mb-4 hidden gap-2 sm:flex">
               {adminNavItems.map((item) => {
                 const Icon = item.icon;
@@ -202,13 +208,22 @@ export default function App() {
               })}
             </div>
 
-            <SurveyList
-              surveys={adminVisibleSurveys}
-              onSelect={setActiveSurvey}
-              showTechnician
-              emptyMessage="No surveys in this view yet."
-              formatDate={formatDate}
-            />
+            {adminTab === 'overview' ? (
+              <AdminDashboard
+                surveys={surveys}
+                onSelectSurvey={setActiveSurvey}
+                onViewAll={() => setAdminTab('all')}
+                formatDate={formatDate}
+              />
+            ) : (
+              <SurveyList
+                surveys={adminVisibleSurveys}
+                onSelect={setActiveSurvey}
+                showTechnician
+                emptyMessage="No surveys in this view yet."
+                formatDate={formatDate}
+              />
+            )}
 
             <MobileNav items={adminNavItems} activeId={adminTab} onChange={setAdminTab} />
           </>
