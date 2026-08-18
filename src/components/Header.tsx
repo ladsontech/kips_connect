@@ -23,11 +23,13 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           {/* Mobile Badge View */}
           <div className="flex items-center gap-2 sm:hidden">
-            <img
-              src="/kibs-logo-mobile.png"
-              alt="Kibs Systems Ltd"
-              className="h-9 w-auto max-w-[50px] object-contain"
-            />
+            <div className="h-10 w-10 overflow-hidden rounded-lg flex items-center justify-center">
+              <img
+                src="/kibs-logo-mobile.png"
+                alt="Kibs Systems Ltd"
+                className="h-[160%] w-[160%] max-w-none object-contain"
+              />
+            </div>
             <div>
               <span className="text-sm font-black tracking-tight text-slate-900">Kibs Connect</span>
               <p className="text-[10px] font-semibold text-slate-500">Survey Portal</p>
@@ -36,11 +38,13 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Desktop Full Logo View */}
           <div className="hidden items-center gap-3.5 sm:flex">
-            <img
-              src="/kibs-logo-desktop.png"
-              alt="Kibs Systems Ltd"
-              className="h-11 w-auto max-w-[320px] object-contain"
-            />
+            <div className="h-14 overflow-hidden flex items-center">
+              <img
+                src="/kibs-logo-desktop.png"
+                alt="Kibs Systems Ltd"
+                className="h-[200%] w-auto max-w-none object-contain"
+              />
+            </div>
             <div className="border-l border-slate-200 pl-3">
               <span className="font-extrabold text-slate-900 tracking-tight text-base">Kibs Connect</span>
               <p className="text-xs text-slate-500 font-medium">Site Survey &amp; Report Portal</p>
