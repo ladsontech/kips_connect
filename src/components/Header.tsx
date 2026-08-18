@@ -2,6 +2,8 @@ import React from 'react';
 import { LogOut, Menu, ShieldCheck, UserRound, X } from 'lucide-react';
 import type { User } from '../types';
 
+import { KibsLogo } from './KibsLogo';
+
 interface HeaderProps {
   user: User;
   onLogout: () => void;
@@ -19,21 +21,26 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-3 py-2 sm:px-6 sm:py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 sm:px-6 sm:py-2.5">
         <div className="flex items-center gap-3">
-          <img
-            src="/kibs-logo-mobile.png"
-            alt="Kibs Systems Ltd"
-            className="h-9 w-auto max-w-[52px] object-contain sm:hidden"
-          />
-          <img
-            src="/kibs-logo-desktop.png"
-            alt="Kibs Systems Ltd"
-            className="hidden h-12 w-auto max-w-[300px] object-contain sm:block"
-          />
-          <div className="hidden border-l border-slate-200 pl-3 sm:block">
-            <span className="font-extrabold text-slate-900 tracking-tight text-base">Kibs Connect</span>
-            <p className="text-xs text-slate-500 font-medium">Site Survey &amp; Report Portal</p>
+          {/* Mobile Badge View */}
+          <div className="flex items-center gap-2.5 sm:hidden">
+            <KibsLogo variant="badge" badgeSize={36} />
+            <div>
+              <span className="text-sm font-black tracking-tight text-slate-900">Kibs Connect</span>
+              <p className="text-[10px] font-semibold text-slate-500">Survey Portal</p>
+            </div>
+          </div>
+
+          {/* Desktop Full Logo View */}
+          <div className="hidden items-center gap-3.5 sm:flex">
+            <div className="h-12 py-0.5">
+              <KibsLogo variant="full" className="h-full" />
+            </div>
+            <div className="border-l border-slate-200 pl-3">
+              <span className="font-extrabold text-slate-900 tracking-tight text-base">Kibs Connect</span>
+              <p className="text-xs text-slate-500 font-medium">Site Survey &amp; Report Portal</p>
+            </div>
           </div>
         </div>
 
