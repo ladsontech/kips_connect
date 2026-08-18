@@ -1,17 +1,21 @@
 # Kibs Connect
 
-Kibs Connect is a simple field survey app for Kibs Systems Ltd. Technicians conduct
-site surveys for new installations and maintenance visits, then report the number of
-devices used. Admins review every survey and approve it.
+Kibs Connect is a simple field survey app for Kibs Systems Ltd. Admins add a site and
+assign it to a technician for a new installation or maintenance visit; the technician
+surveys it and reports the number of devices used; admins review and approve.
 
 - Login page for two roles: **Admin** and **Technician** (no public or sales access)
-- Technicians submit a survey for a site, choosing **New Site Survey** or **Maintenance**
+- Admins add a site (name, location, contact, New Site / Maintenance) and assign it to
+  a technician, with optional instructions
+- Technicians see their assigned sites under **My Sites** and tap **Start Survey** to
+  fill in a survey pre-filled with that site's details — or start a survey from scratch
+  for unplanned visits
 - Each survey records CCTV cameras (2MP, 4MP, 5MP, 8MP/4K), flood lights (30W, 50W,
   100W, 200W), and solar panels installed or proposed
 - Technicians can attach up to 6 site photos per survey (auto-compressed in the browser)
-- Admins get an Overview dashboard (stat tiles, equipment totals, per-rating breakdowns,
-  technician activity) plus Pending / Approved / All Surveys lists, and approve pending
-  surveys from the detail view
+- Admins get an Overview dashboard (stat tiles, open assignments, equipment totals,
+  per-rating breakdowns, technician activity) plus Sites / Pending / Approved / All
+  Surveys lists, and approve pending surveys from the detail view
 - PWA manifest and service worker for installing on a phone
 
 ## Run Locally
@@ -45,9 +49,11 @@ up Supabase Storage (below) before using this for real fieldwork.
 2. Copy `.env.example` to `.env.local` and fill in `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_ANON_KEY`.
 3. Run `supabase/schema.sql` in the Supabase SQL editor (or turn it into a migration).
-   It creates `profiles` (admin/technician role), `surveys` (with equipment counts and
-   an approval workflow), and `survey_photos` (pointers into storage), with row-level
-   security so technicians only see their own surveys and admins see everything.
+   It creates `profiles` (admin/technician role), `site_assignments` (admin-created
+   sites assigned to a technician), `surveys` (with equipment counts, an approval
+   workflow, and an optional link back to the assignment that spawned them), and
+   `survey_photos` (pointers into storage) — with row-level security so technicians
+   only see their own assignments/surveys and admins see everything.
 4. Create a `survey-photos` storage bucket and upload photo files there instead of
    storing them as data URLs, inserting a `survey_photos` row per upload.
 5. Replace the arrays in `src/data/mockData.ts` with real Supabase auth + queries.

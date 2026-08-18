@@ -49,6 +49,25 @@ export interface Survey {
   createdAt: string;
   approvedBy?: string;
   approvedAt?: string;
+  assignmentId?: string;
+}
+
+export type AssignmentStatus = 'assigned' | 'completed';
+
+export interface SiteAssignment {
+  id: string;
+  siteName: string;
+  siteLocation: string;
+  contactPerson: string;
+  contactPhone: string;
+  type: SurveyType;
+  instructions: string;
+  technicianId: string;
+  technicianName: string;
+  assignedBy: string;
+  assignedAt: string;
+  status: AssignmentStatus;
+  surveyId?: string;
 }
 
 export function emptyCctvCounts(): CctvCounts {

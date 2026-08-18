@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { Camera, CheckCircle2, ImagePlus, Lightbulb, Loader2, Sun, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Camera,
+  CheckCircle2,
+  ImagePlus,
+  Lightbulb,
+  Link2,
+  Loader2,
+  Sun,
+  X,
+} from 'lucide-react';
 import {
   CCTV_CATEGORIES,
   FLOODLIGHT_CATEGORIES,
@@ -7,6 +16,7 @@ import {
   emptyFloodlightCounts,
   type CctvCategory,
   type FloodlightCategory,
+  type SiteAssignment,
   type Survey,
   type SurveyPhoto,
   type SurveyType,
@@ -17,13 +27,21 @@ import { compressImage, fileToDataUrl } from '../lib/imageCompression';
 interface SurveyFormProps {
   technician: User;
   nextSurveyNumber: string;
+  assignment?: SiteAssignment | null;
+  onClearAssignment?: () => void;
   onSubmit: (survey: Survey) => void;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
 const MAX_PHOTOS = 6;
 
-export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNumber, onSubmit }) => {
+export const SurveyForm: React.FC<SurveyFormProps> = ({
+  technician,
+  nextSurveyNumber,
+  assignment,
+  onClearAssignment,
+  onSubmit,
+}) => {
   const [type, setType] = useState<SurveyType>('new_site');
   const [siteName, setSiteName] = useState('');
   const [siteLocation, setSiteLocation] = useState('');
@@ -53,6 +71,18 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
     setPhotos([]);
     setPhotoError('');
   }
+
+  // Pre-fill the form whenever the technician taps "Start Survey" on an assigned site.
+  useEffect(() => {
+    if (!assignment) return;
+    setType(assignment.type);
+    setSiteName(assignment.siteName);
+    setSiteLocation(assignment.siteLocation);
+    setContactPerson(assignment.contactPerson);
+    setContactPhone(assignment.contactPhone);
+    setSurveyDate(today());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignment?.id]);
 
   async function handlePhotoSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -118,10 +148,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
       photos,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      assignmentId: assignment?.id,
     };
 
     onSubmit(survey);
     resetForm();
+    onClearAssignment?.();
     setSubmitted(true);
     window.setTimeout(() => setSubmitted(false), 3000);
   }
@@ -132,6 +164,32 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ technician, nextSurveyNu
         <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700 animate-fade-in">
           <CheckCircle2 className="h-4 w-4" />
           Survey submitted for approval.
+        </div>
+      )}
+
+      {assignment && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="flex items-start justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+              <Link2 className="h-3.5 w-3.5 shrink-0" />
+              Assigned by {assignment.assignedBy} — {assignment.siteName}
+            </p>
+            {onClearAssignment && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClearAssignment();
+                  resetForm();
+                }}
+                className="shrink-0 text-[10px] font-bold text-amber-700 underline decoration-dotted hover:text-amber-900"
+              >
+                Start blank instead
+              </button>
+            )}
+          </div>
+          {assignment.instructions && (
+            <p className="mt-1.5 text-xs leading-relaxed text-amber-700">{assignment.instructions}</p>
+          )}
         </div>
       )}
 

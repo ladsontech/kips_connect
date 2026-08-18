@@ -1,4 +1,4 @@
-import type { Survey, User } from '../types';
+import type { SiteAssignment, Survey, User } from '../types';
 
 // Demo accounts. Replace with Supabase auth + profiles once the backend is wired up.
 export const users: User[] = [
@@ -114,5 +114,51 @@ export const surveys: Survey[] = [
     photos: [],
     status: 'pending',
     createdAt: '2026-08-15T08:05:00+03:00',
+  },
+];
+
+export const siteAssignments: SiteAssignment[] = [
+  {
+    id: 'assign-1',
+    siteName: 'ABC Apartments',
+    siteLocation: 'Kira Road, Block B gatehouse',
+    contactPerson: 'John Doe',
+    contactPhone: '+256 700 112 233',
+    type: 'new_site',
+    instructions: 'Client wants full perimeter coverage. Coordinate gate access with John before arriving.',
+    technicianId: 'user-musa',
+    technicianName: 'Musa Sserwadda',
+    assignedBy: 'Grace Namara',
+    assignedAt: '2026-08-10T09:00:00+03:00',
+    status: 'completed',
+    surveyId: 'survey-1',
+  },
+  {
+    id: 'assign-2',
+    siteName: 'Greenview Estate',
+    siteLocation: 'Bukoto, Plot 22',
+    contactPerson: 'Irene N.',
+    contactPhone: '+256 700 556 213',
+    type: 'new_site',
+    instructions: 'New client — survey the perimeter wall and both gates for CCTV and flood light coverage.',
+    technicianId: 'user-peter',
+    technicianName: 'Peter Okello',
+    assignedBy: 'Grace Namara',
+    assignedAt: '2026-08-16T10:15:00+03:00',
+    status: 'assigned',
+  },
+  {
+    id: 'assign-3',
+    siteName: 'XYZ Offices',
+    siteLocation: 'Plot 16, Nakasero',
+    contactPerson: 'Brian Kato',
+    contactPhone: '+256 772 444 390',
+    type: 'maintenance',
+    instructions: 'Quarterly maintenance visit — check all cameras and floodlights are functioning.',
+    technicianId: 'user-asha',
+    technicianName: 'Asha Namukasa',
+    assignedBy: 'Grace Namara',
+    assignedAt: '2026-08-17T08:30:00+03:00',
+    status: 'assigned',
   },
 ];

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Building2,
   Camera,
   CheckCircle2,
   Clock,
@@ -11,14 +12,17 @@ import {
   CCTV_CATEGORIES,
   FLOODLIGHT_CATEGORIES,
   totalCount,
+  type SiteAssignment,
   type Survey,
 } from '../types';
 import { SurveyList } from './SurveyList';
 
 interface AdminDashboardProps {
   surveys: Survey[];
+  assignments: SiteAssignment[];
   onSelectSurvey: (survey: Survey) => void;
   onViewAll: () => void;
+  onViewSites: () => void;
   formatDate: (value: string) => string;
 }
 
@@ -99,10 +103,13 @@ const TechnicianBar: React.FC<{ stat: TechnicianStat }> = ({ stat }) => {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   surveys,
+  assignments,
   onSelectSurvey,
   onViewAll,
+  onViewSites,
   formatDate,
 }) => {
+  const openAssignments = assignments.filter((a) => a.status === 'assigned');
   const total = surveys.length;
   const pending = surveys.filter((s) => s.status === 'pending').length;
   const approved = surveys.filter((s) => s.status === 'approved').length;
@@ -155,6 +162,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <StatTile label="Pending" value={pending} tone="pending" icon={Clock} />
         <StatTile label="Approved" value={approved} tone="approved" icon={CheckCircle2} />
         <StatTile label="Approval Rate" value={total > 0 ? `${approvalRate}%` : '—'} />
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-amber-700">
+            <Building2 className="h-3.5 w-3.5" /> Sites Awaiting Survey · {openAssignments.length}
+          </p>
+          <button
+            type="button"
+            onClick={onViewSites}
+            className="text-xs font-bold text-kibs-deepGreen hover:underline"
+          >
+            View all
+          </button>
+        </div>
+        {openAssignments.length > 0 ? (
+          <div className="mt-3 space-y-2">
+            {openAssignments.slice(0, 3).map((assignment) => (
+              <div
+                key={assignment.id}
+                className="flex items-center justify-between gap-2 rounded-xl border border-amber-100 bg-white px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-slate-900">{assignment.siteName}</p>
+                  <p className="truncate text-[11px] text-slate-500">
+                    {assignment.technicianName} · {assignment.type === 'new_site' ? 'New Site' : 'Maintenance'}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[10px] font-semibold text-amber-600">
+                  {formatDate(assignment.assignedAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-amber-700/80">
+            No open assignments — tap Add Site to send a technician out.
+          </p>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
