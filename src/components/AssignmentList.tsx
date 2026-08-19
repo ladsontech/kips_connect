@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, ChevronRight, MapPin, Phone, User as UserIcon, X } from 'lucide-react';
+import { CheckCircle2, ChevronRight, MapPin, Pencil, Phone, User as UserIcon, X } from 'lucide-react';
 import type { SiteAssignment } from '../types';
 
 interface AssignmentListProps {
@@ -10,6 +10,7 @@ interface AssignmentListProps {
   onStartSurvey?: (assignment: SiteAssignment) => void;
   onCancel?: (assignmentId: string) => void;
   onViewSurvey?: (surveyId: string) => void;
+  onEdit?: (assignment: SiteAssignment) => void;
 }
 
 export const AssignmentList: React.FC<AssignmentListProps> = ({
@@ -20,6 +21,7 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
   onStartSurvey,
   onCancel,
   onViewSurvey,
+  onEdit,
 }) => {
   if (assignments.length === 0) {
     return (
@@ -31,21 +33,39 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
 
   return (
     <div className="space-y-2.5">
-      {assignments.map((assignment) => (
+      {assignments.map((assignment) => {
+        // Once a technician's own assignment is completed, the client's
+        // contact details are no longer shown to them — only to admins
+        // (who always see the full picture via showTechnician).
+        const contactHidden = !showTechnician && assignment.status === 'completed';
+
+        return (
         <div key={assignment.id} className="rounded-2xl bg-white p-4 shadow-card">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-              {assignment.type === 'new_site' ? 'New Site' : 'Maintenance'}
-            </span>
-            <span
-              className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
-                assignment.status === 'completed'
-                  ? 'bg-slate-100 text-slate-500'
-                  : 'bg-kibs-ink text-white'
-              }`}
-            >
-              {assignment.status === 'completed' ? 'Completed' : 'Awaiting Survey'}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                {assignment.type === 'new_site' ? 'New Site' : 'Maintenance'}
+              </span>
+              <span
+                className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                  assignment.status === 'completed'
+                    ? 'bg-slate-100 text-slate-500'
+                    : 'bg-kibs-ink text-white'
+                }`}
+              >
+                {assignment.status === 'completed' ? 'Completed' : 'Awaiting Survey'}
+              </span>
+            </div>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(assignment)}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-kibs-ink"
+                aria-label={`Edit ${assignment.siteName}`}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           <h3 className="mt-1.5 text-sm font-bold text-slate-900">{assignment.siteName}</h3>
@@ -53,9 +73,14 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
             <p className="flex items-center gap-1.5">
               <MapPin className="h-3 w-3 shrink-0 text-slate-400" /> {assignment.siteLocation}
             </p>
-            {assignment.contactPhone && (
+            {!contactHidden && assignment.contactPhone && (
               <p className="flex items-center gap-1.5">
                 <Phone className="h-3 w-3 shrink-0 text-slate-400" /> {assignment.contactPhone}
+              </p>
+            )}
+            {contactHidden && assignment.contactPhone && (
+              <p className="flex items-center gap-1.5 text-slate-400">
+                <Phone className="h-3 w-3 shrink-0" /> Contact hidden after completion
               </p>
             )}
             {showTechnician && (
@@ -110,7 +135,8 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
             </button>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

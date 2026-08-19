@@ -40,6 +40,10 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   const totalCctv = totalCount(survey.cctv);
   const totalFloodlights = totalCount(survey.floodlights);
+  // Once a survey is approved, the client's contact details are no longer
+  // shown to the technician who submitted it — only to admins (canApprove).
+  const contactHidden = !canApprove && survey.status === 'approved';
+  const hasContact = Boolean(survey.contactPerson || survey.contactPhone);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs sm:items-center sm:p-4 animate-fade-in">
@@ -78,16 +82,22 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
             {survey.siteLocation}
           </p>
-          {survey.contactPerson && (
+          {!contactHidden && survey.contactPerson && (
             <p className="flex items-center gap-2">
               <UserIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               {survey.contactPerson}
             </p>
           )}
-          {survey.contactPhone && (
+          {!contactHidden && survey.contactPhone && (
             <p className="flex items-center gap-2">
               <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               {survey.contactPhone}
+            </p>
+          )}
+          {contactHidden && hasContact && (
+            <p className="flex items-center gap-2 text-slate-400">
+              <UserIcon className="h-3.5 w-3.5 shrink-0" />
+              Contact details hidden after approval
             </p>
           )}
           <p className="flex items-center gap-2">

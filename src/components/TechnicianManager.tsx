@@ -1,11 +1,12 @@
 import React from 'react';
-import { Building2, ClipboardList, Mail, Phone, Trash2, UserRound } from 'lucide-react';
+import { Building2, ClipboardList, Mail, Pencil, Phone, Trash2, UserRound } from 'lucide-react';
 import type { SiteAssignment, Survey, User } from '../types';
 
 interface TechnicianManagerProps {
   technicians: User[];
   surveys: Survey[];
   assignments: SiteAssignment[];
+  onEdit: (technician: User) => void;
   onRemove: (technicianId: string) => void;
 }
 
@@ -13,6 +14,7 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
   technicians,
   surveys,
   assignments,
+  onEdit,
   onRemove,
 }) => {
   if (technicians.length === 0) {
@@ -50,14 +52,24 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => onRemove(technician.id)}
-                className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                aria-label={`Remove ${technician.name}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onEdit(technician)}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-kibs-ink"
+                  aria-label={`Edit ${technician.name}`}
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemove(technician.id)}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                  aria-label={`Remove ${technician.name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-600">

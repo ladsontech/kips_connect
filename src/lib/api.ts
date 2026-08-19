@@ -265,6 +265,26 @@ export async function createAssignment(draft: AssignmentDraft, admin: User): Pro
   };
 }
 
+export async function updateAssignment(assignmentId: string, draft: AssignmentDraft): Promise<SiteAssignment> {
+  const { data, error } = await supabase
+    .from('site_assignments')
+    .update({
+      site_name: draft.siteName,
+      site_location: draft.siteLocation,
+      contact_person: draft.contactPerson || null,
+      contact_phone: draft.contactPhone || null,
+      type: draft.type,
+      instructions: draft.instructions || null,
+      technician_id: draft.technicianId,
+      technician_name: draft.technicianName,
+    })
+    .eq('id', assignmentId)
+    .select()
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Could not update this assignment.');
+  return assignmentRowToAssignment(data as AssignmentRow);
+}
+
 export async function cancelAssignment(assignmentId: string): Promise<void> {
   const { error } = await supabase.from('site_assignments').delete().eq('id', assignmentId);
   if (error) throw new Error(error.message);
@@ -395,6 +415,31 @@ export interface CreateTechnicianInput {
 export async function createTechnician(input: CreateTechnicianInput): Promise<User> {
   const { data, error } = await supabase.functions.invoke('create-technician', {
     body: input,
+  });
+  if (error) {
+    const message = await extractFunctionError(error);
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: 'technician',
+    phone: data.phone ?? undefined,
+  };
+}
+
+export interface UpdateTechnicianInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+}
+
+export async function updateTechnician(technicianId: string, input: UpdateTechnicianInput): Promise<User> {
+  const { data, error } = await supabase.functions.invoke('update-technician', {
+    body: { technicianId, ...input },
   });
   if (error) {
     const message = await extractFunctionError(error);

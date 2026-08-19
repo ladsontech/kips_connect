@@ -21,8 +21,10 @@ import { SurveyModal } from './components/SurveyModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssignmentList } from './components/AssignmentList';
 import { AssignSiteModal } from './components/AssignSiteModal';
+import { EditAssignmentModal } from './components/EditAssignmentModal';
 import { TechnicianManager } from './components/TechnicianManager';
 import { AddTechnicianModal } from './components/AddTechnicianModal';
+import { EditTechnicianModal } from './components/EditTechnicianModal';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import {
   approveSurvey,
@@ -36,9 +38,12 @@ import {
   fetchSurveys,
   fetchTechnicians,
   signOut,
+  updateAssignment,
+  updateTechnician,
   type AssignmentDraft,
   type CreateTechnicianInput,
   type SurveyDraft,
+  type UpdateTechnicianInput,
 } from './lib/api';
 import type { SiteAssignment, Survey, User } from './types';
 
@@ -82,6 +87,8 @@ export default function App() {
   const [prefillAssignment, setPrefillAssignment] = useState<SiteAssignment | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showAddTechnicianModal, setShowAddTechnicianModal] = useState(false);
+  const [editingTechnician, setEditingTechnician] = useState<User | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<SiteAssignment | null>(null);
   const [actionError, setActionError] = useState('');
 
   function flashError(message: string) {
@@ -233,6 +240,11 @@ export default function App() {
     setAssignments((prev) => [assignment, ...prev]);
   }
 
+  async function handleUpdateAssignment(assignmentId: string, draft: AssignmentDraft) {
+    const updated = await updateAssignment(assignmentId, draft);
+    setAssignments((prev) => prev.map((a) => (a.id === assignmentId ? updated : a)));
+  }
+
   async function handleCancelAssignment(assignmentId: string) {
     try {
       await cancelAssignment(assignmentId);
@@ -256,6 +268,14 @@ export default function App() {
     const technician = await createTechnician(input);
     setTechnicians((prev) => [...prev, technician].sort((a, b) => a.name.localeCompare(b.name)));
     return technician;
+  }
+
+  async function handleUpdateTechnician(technicianId: string, input: UpdateTechnicianInput): Promise<User> {
+    const updated = await updateTechnician(technicianId, input);
+    setTechnicians((prev) =>
+      prev.map((t) => (t.id === technicianId ? updated : t)).sort((a, b) => a.name.localeCompare(b.name))
+    );
+    return updated;
   }
 
   async function handleRemoveTechnician(technicianId: string) {
@@ -394,6 +414,7 @@ export default function App() {
                 showTechnician
                 onCancel={handleCancelAssignment}
                 onViewSurvey={handleViewSurvey}
+                onEdit={setEditingAssignment}
               />
             )}
             {adminTab === 'technicians' && (
@@ -401,6 +422,7 @@ export default function App() {
                 technicians={technicians}
                 surveys={surveys}
                 assignments={assignments}
+                onEdit={setEditingTechnician}
                 onRemove={handleRemoveTechnician}
               />
             )}
@@ -436,11 +458,25 @@ export default function App() {
             onClose={() => setShowAssignModal(false)}
             onCreate={handleCreateAssignment}
           />
+          <EditAssignmentModal
+            open={!!editingAssignment}
+            assignment={editingAssignment}
+            technicians={technicians}
+            onClose={() => setEditingAssignment(null)}
+            onSave={handleUpdateAssignment}
+          />
           <AddTechnicianModal
             open={showAddTechnicianModal}
             existingUsers={technicians}
             onClose={() => setShowAddTechnicianModal(false)}
             onCreate={handleCreateTechnician}
+          />
+          <EditTechnicianModal
+            open={!!editingTechnician}
+            technician={editingTechnician}
+            existingUsers={technicians}
+            onClose={() => setEditingTechnician(null)}
+            onSave={handleUpdateTechnician}
           />
         </>
       )}
