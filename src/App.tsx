@@ -377,9 +377,20 @@ export default function App() {
         onLogout={handleLogout}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
-        secondaryNavItems={user.role === 'admin' ? secondaryAdminNavItems : undefined}
-        activeNavId={user.role === 'admin' ? adminTab : undefined}
-        onNavChange={user.role === 'admin' ? (id) => goToAdminTab(id as AdminTab) : undefined}
+        navGroups={
+          user.role === 'admin'
+            ? [
+                { label: 'Workspace', items: primaryAdminNavItems },
+                { label: 'Reports', items: secondaryAdminNavItems },
+              ]
+            : [{ label: 'Menu', items: technicianNavItems }]
+        }
+        activeNavId={user.role === 'admin' ? adminTab : technicianTab}
+        onNavChange={
+          user.role === 'admin'
+            ? (id) => goToAdminTab(id as AdminTab)
+            : (id) => setTechnicianTab(id as TechnicianTab)
+        }
       />
 
       {(actionError || loadError) && (
