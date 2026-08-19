@@ -36,8 +36,13 @@ create table profiles (
 -- back onto this assignment. technician_name/assigned_by_name are snapshotted
 -- at write time so history reads fine even if that login is later removed
 -- (technician_id/assigned_by go to NULL on account deletion).
+create sequence assignment_number_seq start 1;
+
 create table site_assignments (
   id uuid primary key default gen_random_uuid(),
+  -- Short human-readable reference ("order id") shown on the technician's
+  -- assigned-site card, distinct from the internal uuid.
+  assignment_number text not null unique default ('AS-' || lpad(nextval('assignment_number_seq')::text, 4, '0')),
   site_name text not null,
   site_location text not null,
   contact_person text,

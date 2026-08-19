@@ -56,6 +56,7 @@ interface ReportRow {
 
 interface AssignmentRow {
   id: string;
+  assignment_number: string;
   site_name: string;
   site_location: string;
   contact_person: string | null;
@@ -120,6 +121,7 @@ function reportRowToReport(row: ReportRow): Report {
 function assignmentRowToAssignment(row: AssignmentRow): SiteAssignment {
   return {
     id: row.id,
+    assignmentNumber: row.assignment_number,
     siteName: row.site_name,
     siteLocation: row.site_location,
     contactPerson: row.contact_person ?? '',

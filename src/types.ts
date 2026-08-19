@@ -78,6 +78,8 @@ export type AssignmentStatus = 'assigned' | 'completed';
 // A site the admin has assigned to a technician.
 export interface SiteAssignment {
   id: string;
+  /** Short reference shown to technicians, e.g. "AS-0012". */
+  assignmentNumber: string;
   siteName: string;
   siteLocation: string;
   contactPerson: string;
