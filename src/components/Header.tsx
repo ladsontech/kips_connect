@@ -1,12 +1,25 @@
 import React from 'react';
 import { LogOut, Menu, ShieldCheck, UserRound, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { User } from '../types';
+
+interface DrawerNavItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  count?: number;
+}
 
 interface HeaderProps {
   user: User;
   onLogout: () => void;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
+  // Secondary nav destinations that don't fit in the 3-item bottom bar —
+  // shown as a clean drawer here, right below the header.
+  secondaryNavItems?: DrawerNavItem[];
+  activeNavId?: string;
+  onNavChange?: (id: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -14,6 +27,9 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   mobileMenuOpen,
   setMobileMenuOpen,
+  secondaryNavItems,
+  activeNavId,
+  onNavChange,
 }) => {
   const RoleIcon = user.role === 'admin' ? ShieldCheck : UserRound;
 
@@ -88,6 +104,45 @@ export const Header: React.FC<HeaderProps> = ({
               Log out
             </button>
           </div>
+
+          {secondaryNavItems && secondaryNavItems.length > 0 && (
+            <div className="mt-2.5">
+              <p className="px-1 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                More
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {secondaryNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeNavId === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        onNavChange?.(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition ${
+                        isActive ? 'bg-kibs-ink text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <span className="flex-1">{item.label}</span>
+                      {typeof item.count === 'number' && item.count > 0 && (
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                            isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {item.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </header>

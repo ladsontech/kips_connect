@@ -303,14 +303,20 @@ export default function App() {
     { id: 'mine' as TechnicianTab, label: 'My Surveys', icon: ClipboardList },
   ];
 
+  // The 3 major destinations (Overview/Sites/Technicians) live in the
+  // always-visible bottom bar on mobile and come first in the desktop
+  // sidebar; the rest (survey status filters) live in the Header's drawer
+  // on mobile and simply continue the sidebar list on desktop.
   const adminNavItems = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: LayoutDashboard },
     { id: 'sites' as AdminTab, label: 'Sites', icon: Building2, count: openAssignments.length },
+    { id: 'technicians' as AdminTab, label: 'Technicians', icon: Users },
     { id: 'pending' as AdminTab, label: 'Pending', icon: Clock, count: pendingSurveys.length },
     { id: 'approved' as AdminTab, label: 'Approved', icon: CheckCircle2 },
     { id: 'all' as AdminTab, label: 'All Surveys', icon: LayoutList },
-    { id: 'technicians' as AdminTab, label: 'Technicians', icon: Users },
   ];
+  const primaryAdminNavItems = adminNavItems.slice(0, 3);
+  const secondaryAdminNavItems = adminNavItems.slice(3);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 sm:pb-8">
@@ -319,6 +325,9 @@ export default function App() {
         onLogout={handleLogout}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
+        secondaryNavItems={user.role === 'admin' ? secondaryAdminNavItems : undefined}
+        activeNavId={user.role === 'admin' ? adminTab : undefined}
+        onNavChange={user.role === 'admin' ? (id) => setAdminTab(id as AdminTab) : undefined}
       />
 
       {(actionError || loadError) && (
@@ -437,7 +446,7 @@ export default function App() {
             )}
           </main>
 
-          <MobileNav items={adminNavItems} activeId={adminTab} onChange={setAdminTab} />
+          <MobileNav items={primaryAdminNavItems} activeId={adminTab} onChange={setAdminTab} />
         </div>
       )}
 

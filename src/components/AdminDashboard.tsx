@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Building2,
   Camera,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Lightbulb,
   ListChecks,
@@ -66,35 +67,6 @@ const EquipmentBar: React.FC<{ label: string; value: number; max: number }> = ({
   );
 };
 
-interface TechnicianStat {
-  id: string;
-  name: string;
-  approved: number;
-  pending: number;
-}
-
-const TechnicianBar: React.FC<{ stat: TechnicianStat }> = ({ stat }) => {
-  const total = stat.approved + stat.pending;
-  const approvedPct = total > 0 ? (stat.approved / total) * 100 : 0;
-  const pendingPct = total > 0 ? (stat.pending / total) * 100 : 0;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-        <span>{stat.name}</span>
-        <span className="text-slate-400">
-          {total} survey{total === 1 ? '' : 's'}
-        </span>
-      </div>
-      <div className="mt-1 flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
-        {stat.pending > 0 && <div className="h-full bg-kibs-ink" style={{ width: `${pendingPct}%` }} />}
-        {stat.approved > 0 && stat.pending > 0 && <div className="h-full w-[2px] bg-white" />}
-        {stat.approved > 0 && <div className="h-full bg-slate-300" style={{ width: `${approvedPct}%` }} />}
-      </div>
-    </div>
-  );
-};
-
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   surveys,
   assignments,
@@ -103,6 +75,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onViewSites,
   formatDate,
 }) => {
+  const [showEquipmentDetail, setShowEquipmentDetail] = useState(false);
   const openAssignments = assignments.filter((a) => a.status === 'assigned');
   const total = surveys.length;
   const pending = surveys.filter((s) => s.status === 'pending').length;
@@ -128,22 +101,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const equipmentMax = Math.max(1, ...equipmentTotals.map((e) => e.value));
   const cctvMax = Math.max(1, ...cctvTotals.map((e) => e.value));
   const floodlightMax = Math.max(1, ...floodlightTotals.map((e) => e.value));
-
-  const technicianMap = new Map<string, TechnicianStat>();
-  surveys.forEach((survey) => {
-    const existing = technicianMap.get(survey.technicianId) ?? {
-      id: survey.technicianId,
-      name: survey.technicianName,
-      approved: 0,
-      pending: 0,
-    };
-    if (survey.status === 'approved') existing.approved += 1;
-    else existing.pending += 1;
-    technicianMap.set(survey.technicianId, existing);
-  });
-  const technicianStats = Array.from(technicianMap.values()).sort(
-    (a, b) => b.approved + b.pending - (a.approved + a.pending)
-  );
 
   const recentSurveys = [...surveys]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -202,52 +159,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <EquipmentBar key={item.label} label={item.label} value={item.value} max={equipmentMax} />
           ))}
         </div>
-      </div>
 
-      <div className="rounded-2xl bg-white p-4 shadow-card">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Equipment by Rating</p>
-        <div className="mt-3 grid gap-5 sm:grid-cols-2">
-          <div className="space-y-2.5">
-            <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-              <Camera className="h-3 w-3" /> CCTV Cameras
-            </p>
-            {cctvTotals.map((item) => (
-              <EquipmentBar key={item.label} label={item.label} value={item.value} max={cctvMax} />
-            ))}
-          </div>
-          <div className="space-y-2.5 border-t border-slate-100 pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
-            <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-              <Lightbulb className="h-3 w-3" /> Flood Lights
-            </p>
-            {floodlightTotals.map((item) => (
-              <EquipmentBar key={item.label} label={item.label} value={item.value} max={floodlightMax} />
-            ))}
-          </div>
-        </div>
-      </div>
+        <button
+          type="button"
+          onClick={() => setShowEquipmentDetail((prev) => !prev)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 border-t border-slate-100 pt-3 text-xs font-bold text-slate-500 transition hover:text-slate-900"
+        >
+          {showEquipmentDetail ? 'Hide breakdown by rating' : 'Show breakdown by rating'}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showEquipmentDetail ? 'rotate-180' : ''}`} />
+        </button>
 
-      <div className="rounded-2xl bg-white p-4 shadow-card">
-        <div className="flex items-center justify-between">
-          <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-            <ListChecks className="h-3.5 w-3.5" /> Technician Activity
-          </p>
-          <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500">
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-kibs-ink" /> Pending
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-slate-300" /> Approved
-            </span>
+        {showEquipmentDetail && (
+          <div className="mt-3 grid gap-5 border-t border-slate-100 pt-3 sm:grid-cols-2">
+            <div className="space-y-2.5">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                <Camera className="h-3 w-3" /> CCTV Cameras
+              </p>
+              {cctvTotals.map((item) => (
+                <EquipmentBar key={item.label} label={item.label} value={item.value} max={cctvMax} />
+              ))}
+            </div>
+            <div className="space-y-2.5 border-t border-slate-100 pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                <Lightbulb className="h-3 w-3" /> Flood Lights
+              </p>
+              {floodlightTotals.map((item) => (
+                <EquipmentBar key={item.label} label={item.label} value={item.value} max={floodlightMax} />
+              ))}
+            </div>
           </div>
-        </div>
-        {technicianStats.length > 0 ? (
-          <div className="mt-3 space-y-3">
-            {technicianStats.map((stat) => (
-              <TechnicianBar key={stat.id} stat={stat} />
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-xs text-slate-400">No surveys submitted yet.</p>
         )}
       </div>
 
