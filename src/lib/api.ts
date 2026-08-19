@@ -4,7 +4,9 @@ import type {
   Report,
   ReportPhoto,
   ReportStatus,
+  SeenMap,
   SiteAssignment,
+  Urgency,
   User,
 } from '../types';
 
@@ -19,6 +21,7 @@ interface ProfileRow {
   email: string;
   role: 'admin' | 'technician';
   phone: string | null;
+  reports_seen_at?: SeenMap | null;
 }
 
 interface ReportPhotoRow {
@@ -41,6 +44,7 @@ interface ReportRow {
   technician_name: string | null;
   site_assignment_id: string | null;
   notes: string | null;
+  urgency: Urgency;
   status: ReportStatus;
   reviewed_by: string | null;
   reviewed_by_name: string | null;
@@ -76,6 +80,7 @@ function profileRowToUser(row: ProfileRow): User {
     email: row.email,
     role: row.role,
     phone: row.phone ?? undefined,
+    reportsSeenAt: row.reports_seen_at ?? {},
   };
 }
 
@@ -101,6 +106,7 @@ function reportRowToReport(row: ReportRow): Report {
     technicianName: row.technician_name ?? '',
     reportDate: row.survey_date,
     notes: row.notes ?? '',
+    urgency: row.urgency ?? 'medium',
     photos: (row.survey_photos ?? []).map(photoRowToPhoto),
     status: row.status,
     createdAt: row.created_at,
@@ -264,6 +270,7 @@ export interface ReportDraft {
   contactPhone: string;
   reportDate: string;
   notes: string;
+  urgency: Urgency;
   photoFiles: File[];
   assignmentId?: string;
 }
@@ -282,6 +289,7 @@ export async function createReport(draft: ReportDraft, technician: User): Promis
       technician_name: technician.name,
       site_assignment_id: draft.assignmentId ?? null,
       notes: draft.notes || null,
+      urgency: draft.urgency,
     })
     .select()
     .single();
@@ -350,6 +358,18 @@ export async function rejectReport(reportId: string, admin: User, reason: string
       rejection_reason: reason || null,
     })
     .eq('id', reportId);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Persists which categories this admin has caught up on. Stored on their own
+ * profile row so the "new submission" badges follow them between devices.
+ */
+export async function saveSeenMap(userId: string, seen: SeenMap): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ reports_seen_at: seen })
+    .eq('id', userId);
   if (error) throw new Error(error.message);
 }
 

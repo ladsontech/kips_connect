@@ -1,5 +1,6 @@
 import React from 'react';
-import { ChevronRight, Clock, UserRound } from 'lucide-react';
+import { ChevronRight, ClipboardList, Clock, Hammer, UserRound, Wrench } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   JOB_TYPES,
   JOB_TYPE_LABELS,
@@ -19,23 +20,52 @@ interface AdminDashboardProps {
   onViewSites: () => void;
   onViewTechnicians: () => void;
   onSelectTechnician: (technician: User) => void;
+  /** Count of submissions per category the admin hasn't reviewed yet. */
+  newByCategory: Record<JobType, number>;
+  onSelectCategory: (type: JobType) => void;
   formatDate: (value: string) => string;
 }
+
+const CATEGORY_ICONS: Record<JobType, LucideIcon> = {
+  survey: ClipboardList,
+  installation: Hammer,
+  maintenance: Wrench,
+};
 
 interface CategoryTileProps {
   label: string;
   total: number;
   open: number;
+  newCount: number;
+  icon: LucideIcon;
+  onClick: () => void;
 }
 
-const CategoryTile: React.FC<CategoryTileProps> = ({ label, total, open }) => (
-  <div className="rounded-2xl bg-white p-3 text-center shadow-card">
+const CategoryTile: React.FC<CategoryTileProps> = ({
+  label,
+  total,
+  open,
+  newCount,
+  icon: Icon,
+  onClick,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="relative rounded-2xl bg-white p-3 text-center shadow-card transition hover:-translate-y-0.5 hover:shadow-cardHover"
+  >
+    {newCount > 0 && (
+      <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white ring-2 ring-slate-50">
+        {newCount > 99 ? '99+' : newCount}
+      </span>
+    )}
+    <Icon className="mx-auto mb-1 h-4 w-4 text-slate-400" />
     <p className="text-2xl font-black text-slate-950">{total}</p>
     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
     <p className="mt-1 text-[10px] font-semibold text-slate-500">
       {open > 0 ? `${open} open` : 'None open'}
     </p>
-  </div>
+  </button>
 );
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -47,6 +77,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onViewSites,
   onViewTechnicians,
   onSelectTechnician,
+  newByCategory,
+  onSelectCategory,
   formatDate,
 }) => {
   const openAssignments = assignments.filter((a) => a.status === 'assigned');
@@ -74,7 +106,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
         {categoryStats.map((stat) => (
-          <CategoryTile key={stat.type} label={stat.label} total={stat.total} open={stat.open} />
+          <CategoryTile
+            key={stat.type}
+            label={stat.label}
+            total={stat.total}
+            open={stat.open}
+            newCount={newByCategory[stat.type] ?? 0}
+            icon={CATEGORY_ICONS[stat.type]}
+            onClick={() => onSelectCategory(stat.type)}
+          />
         ))}
       </div>
 

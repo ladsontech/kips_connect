@@ -3,8 +3,11 @@ import { Camera, CheckCircle2, ImagePlus, Link2, Loader2, X } from 'lucide-react
 import {
   JOB_TYPES,
   JOB_TYPE_LABELS,
+  URGENCY_LABELS,
+  URGENCY_LEVELS,
   type JobType,
   type SiteAssignment,
+  type Urgency,
   type User,
 } from '../types';
 import type { ReportDraft } from '../lib/api';
@@ -40,6 +43,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
   const [contactPhone, setContactPhone] = useState('');
   const [reportDate, setReportDate] = useState(today());
   const [notes, setNotes] = useState('');
+  const [urgency, setUrgency] = useState<Urgency>('medium');
   const [photos, setPhotos] = useState<PendingPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
@@ -55,6 +59,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
     setContactPhone('');
     setReportDate(today());
     setNotes('');
+    setUrgency('medium');
     photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
     setPhotos([]);
     setPhotoError('');
@@ -131,6 +136,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
       contactPhone: contactPhone.trim(),
       reportDate,
       notes: notes.trim(),
+      urgency,
       photoFiles: photos.map((photo) => photo.file),
       assignmentId: assignment?.id,
     };
@@ -260,6 +266,39 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             onChange={(event) => setReportDate(event.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
           />
+          <p className="mt-1 text-[10px] font-medium text-slate-400">
+            Defaults to today — change it if you're writing this up later.
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-700">Urgency</label>
+          <div className="grid grid-cols-3 gap-2">
+            {URGENCY_LEVELS.map((level) => {
+              const selected = urgency === level;
+              const selectedClass =
+                level === 'high'
+                  ? 'border-red-600 bg-red-600 text-white'
+                  : 'border-kibs-ink bg-kibs-ink text-white';
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setUrgency(level)}
+                  className={`rounded-xl border py-2.5 text-xs font-bold transition ${
+                    selected
+                      ? selectedClass
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  {URGENCY_LABELS[level]}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-[10px] font-medium text-slate-400">
+            How soon does the work at this site need attention?
+          </p>
         </div>
       </div>
 

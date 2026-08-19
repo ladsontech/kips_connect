@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronRight, Images, Search, X } from 'lucide-react';
-import { JOB_TYPE_LABELS, type Report } from '../types';
+import { JOB_TYPES, JOB_TYPE_LABELS, type JobType, type Report } from '../types';
 import { StatusBadge } from './StatusBadge';
+import { UrgencyBadge } from './UrgencyBadge';
+
+export type TypeFilter = JobType | 'all';
 
 interface SurveyListProps {
   surveys: Report[];
@@ -11,6 +14,11 @@ interface SurveyListProps {
   formatDate: (value: string) => string;
   /** Show the search + date filter bar above the list (admin views). */
   showFilters?: boolean;
+  /** Controlled job-type filter; chips only render when a setter is supplied. */
+  typeFilter?: TypeFilter;
+  onTypeFilterChange?: (value: TypeFilter) => void;
+  /** Reports the admin hasn't reviewed yet — flagged with a red dot. */
+  newReportIds?: Set<string>;
 }
 
 // Local-time YYYY-MM-DD so presets line up with the user's own calendar
@@ -54,6 +62,9 @@ export const SurveyList: React.FC<SurveyListProps> = ({
   emptyMessage,
   formatDate,
   showFilters,
+  typeFilter = 'all',
+  onTypeFilterChange,
+  newReportIds,
 }) => {
   const [query, setQuery] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -64,6 +75,7 @@ export const SurveyList: React.FC<SurveyListProps> = ({
     const needle = query.trim().toLowerCase();
 
     return surveys.filter((report) => {
+      if (typeFilter !== 'all' && report.type !== typeFilter) return false;
       if (fromDate && report.reportDate < fromDate) return false;
       if (toDate && report.reportDate > toDate) return false;
       if (!needle) return true;
@@ -74,7 +86,7 @@ export const SurveyList: React.FC<SurveyListProps> = ({
         report.technicianName.toLowerCase().includes(needle)
       );
     });
-  }, [surveys, showFilters, query, fromDate, toDate]);
+  }, [surveys, showFilters, query, fromDate, toDate, typeFilter]);
 
   const activePreset = useMemo(() => {
     if (!fromDate && !toDate) return null;
@@ -85,7 +97,7 @@ export const SurveyList: React.FC<SurveyListProps> = ({
   }, [fromDate, toDate]);
 
   const datesActive = Boolean(fromDate || toDate);
-  const filtersActive = Boolean(query || datesActive);
+  const filtersActive = Boolean(query || datesActive || typeFilter !== 'all');
 
   function applyPreset(preset: PresetId) {
     if (activePreset === preset) {
@@ -102,6 +114,7 @@ export const SurveyList: React.FC<SurveyListProps> = ({
     setQuery('');
     setFromDate('');
     setToDate('');
+    onTypeFilterChange?.('all');
   }
 
   const filterBar = showFilters ? (
@@ -115,6 +128,27 @@ export const SurveyList: React.FC<SurveyListProps> = ({
           className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
         />
       </div>
+
+      {onTypeFilterChange && (
+        <div className="mt-2 flex flex-wrap gap-1.5 border-b border-slate-100 pb-2">
+          {([{ id: 'all' as TypeFilter, label: 'All Types' }] as { id: TypeFilter; label: string }[])
+            .concat(JOB_TYPES.map((type) => ({ id: type, label: JOB_TYPE_LABELS[type] })))
+            .map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onTypeFilterChange(option.id)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  typeFilter === option.id
+                    ? 'bg-kibs-ink text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+        </div>
+      )}
 
       <div className="mt-2 flex flex-wrap gap-1.5">
         <button
@@ -212,6 +246,11 @@ export const SurveyList: React.FC<SurveyListProps> = ({
         >
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
+              {newReportIds?.has(report.id) && (
+                <span className="flex items-center gap-1 rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-black text-white">
+                  NEW
+                </span>
+              )}
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                 {report.reportNumber}
               </span>
@@ -219,6 +258,7 @@ export const SurveyList: React.FC<SurveyListProps> = ({
                 {JOB_TYPE_LABELS[report.type]}
               </span>
               <StatusBadge status={report.status} />
+              {report.urgency === 'high' && <UrgencyBadge urgency={report.urgency} />}
             </div>
             <h3 className="mt-1.5 truncate text-sm font-bold text-slate-900">{report.siteName}</h3>
             <p className="truncate text-xs text-slate-500">

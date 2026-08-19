@@ -163,6 +163,22 @@ img {
     box-shadow: none !important;
   }
 
+  /* The report normally lives inside a scrolling, height-capped overlay.
+     Release both so long reports paginate across pages instead of clipping. */
+  .print-overlay {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    background: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .print-document,
+  .print-document * {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   .no-print {
     display: none !important;
   }

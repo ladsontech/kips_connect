@@ -24,6 +24,8 @@ interface HeaderProps {
   navGroups?: DrawerNavGroup[];
   activeNavId?: string;
   onNavChange?: (id: string) => void;
+  /** Rendered in the header's action cluster at every screen size. */
+  notificationSlot?: React.ReactNode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   navGroups,
   activeNavId,
   onNavChange,
+  notificationSlot,
 }) => {
   const RoleIcon = user.role === 'admin' ? ShieldCheck : UserRound;
 
@@ -71,35 +74,39 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          <div className="hidden items-center gap-3 lg:flex">
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100/80 px-3 py-1.5">
-              <RoleIcon className="h-4 w-4 text-kibs-ink" />
-              <div className="leading-tight">
-                <p className="text-xs font-bold text-slate-900">{user.name}</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  {user.role === 'admin' ? 'Admin' : 'Technician'}
-                </p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {notificationSlot}
+
+            <div className="hidden items-center gap-3 lg:flex">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100/80 px-3 py-1.5">
+                <RoleIcon className="h-4 w-4 text-kibs-ink" />
+                <div className="leading-tight">
+                  <p className="text-xs font-bold text-slate-900">{user.name}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    {user.role === 'admin' ? 'Admin' : 'Technician'}
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Log out
+              </button>
             </div>
+
             <button
               type="button"
-              onClick={onLogout}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 lg:hidden"
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
-              <LogOut className="h-3.5 w-3.5" />
-              Log out
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 lg:hidden"
-            aria-label="Toggle menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
       </header>
 

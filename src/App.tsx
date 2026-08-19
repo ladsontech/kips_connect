@@ -19,7 +19,8 @@ import { Sidebar } from './components/Sidebar';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { LoginPage } from './components/LoginPage';
 import { SurveyForm } from './components/SurveyForm';
-import { SurveyList } from './components/SurveyList';
+import { SurveyList, type TypeFilter } from './components/SurveyList';
+import { NotificationBell } from './components/NotificationBell';
 import { SurveyModal } from './components/SurveyModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssignmentList } from './components/AssignmentList';
@@ -42,6 +43,7 @@ import {
   fetchReports,
   fetchTechnicians,
   rejectReport,
+  saveSeenMap,
   signOut,
   updateAssignment,
   updateTechnician,
@@ -50,7 +52,10 @@ import {
   type ReportDraft,
   type UpdateTechnicianInput,
 } from './lib/api';
-import type { Report, SiteAssignment, User } from './types';
+import type { JobType, Report, SeenMap, SiteAssignment, User } from './types';
+
+/** How often the admin's report list is refreshed to pick up new submissions. */
+const POLL_INTERVAL_MS = 60_000;
 
 function formatDate(value: string) {
   if (!value) return '';
@@ -106,6 +111,8 @@ export default function App() {
   const [editingTechnician, setEditingTechnician] = useState<User | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<SiteAssignment | null>(null);
   const [actionError, setActionError] = useState('');
+  const [seenMap, setSeenMap] = useState<SeenMap>({});
+  const [reportTypeFilter, setReportTypeFilter] = useState<TypeFilter>('all');
 
   function flashError(message: string) {
     setActionError(message);
@@ -175,6 +182,28 @@ export default function App() {
     };
   }, [user?.id]);
 
+  // Seed the "already reviewed" marks from the signed-in admin's profile.
+  useEffect(() => {
+    setSeenMap(user?.reportsSeenAt ?? {});
+  }, [user?.id]);
+
+  // Admins get fresh submissions without reloading. Skipped while the tab is
+  // in the background so a parked window isn't polling all day.
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+
+    const timer = window.setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        setReports(await fetchReports());
+      } catch {
+        // A dropped poll is not worth surfacing — the next one will retry.
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, [user?.id, user?.role]);
+
   const myReports = useMemo(
     () => (user ? reports.filter((report) => report.technicianId === user.id) : []),
     [reports, user]
@@ -189,6 +218,27 @@ export default function App() {
   const approvedReports = useMemo(() => reports.filter((r) => r.status === 'approved'), [reports]);
   const rejectedReports = useMemo(() => reports.filter((r) => r.status === 'rejected'), [reports]);
   const openAssignments = useMemo(() => assignments.filter((a) => a.status === 'assigned'), [assignments]);
+
+  // A submission is "new" while it is still pending and was created after the
+  // last time this admin caught up on that category.
+  const newReports = useMemo(() => {
+    if (!user || user.role !== 'admin') return [];
+    return reports.filter((report) => {
+      if (report.status !== 'pending') return false;
+      const seenAt = seenMap[report.type];
+      return !seenAt || new Date(report.createdAt).getTime() > new Date(seenAt).getTime();
+    });
+  }, [reports, seenMap, user]);
+
+  const newReportIds = useMemo(() => new Set(newReports.map((r) => r.id)), [newReports]);
+
+  const newByCategory = useMemo(() => {
+    const counts: Record<JobType, number> = { survey: 0, installation: 0, maintenance: 0 };
+    newReports.forEach((report) => {
+      counts[report.type] += 1;
+    });
+    return counts;
+  }, [newReports]);
 
   // Resolved from state rather than stored, so edits to a technician are
   // reflected immediately while their detail page is open.
@@ -224,6 +274,30 @@ export default function App() {
   function goToAdminTab(tab: AdminTab) {
     setViewingTechnicianId(null);
     setAdminTab(tab);
+    setReportTypeFilter('all');
+  }
+
+  // Persisting the seen marks is best-effort: the badge already updated
+  // locally, and a failed write just means it reappears on the next login.
+  async function markSeen(next: SeenMap) {
+    if (!user) return;
+    setSeenMap(next);
+    try {
+      await saveSeenMap(user.id, next);
+    } catch {
+      // ignored on purpose
+    }
+  }
+
+  function handleSelectCategory(type: JobType) {
+    goToAdminTab('all');
+    setReportTypeFilter(type);
+    void markSeen({ ...seenMap, [type]: new Date().toISOString() });
+  }
+
+  function handleMarkAllRead() {
+    const now = new Date().toISOString();
+    void markSeen({ survey: now, installation: now, maintenance: now });
   }
 
   async function handleCreateReport(draft: ReportDraft) {
@@ -391,6 +465,17 @@ export default function App() {
             ? (id) => goToAdminTab(id as AdminTab)
             : (id) => setTechnicianTab(id as TechnicianTab)
         }
+        notificationSlot={
+          user.role === 'admin' ? (
+            <NotificationBell
+              newReports={newReports}
+              onOpenReport={setActiveReport}
+              onViewAll={() => goToAdminTab('pending')}
+              onMarkAllRead={handleMarkAllRead}
+              formatDate={formatDate}
+            />
+          ) : undefined
+        }
       />
 
       {(actionError || loadError) && (
@@ -511,6 +596,8 @@ export default function App() {
                   setAdminTab('technicians');
                   setViewingTechnicianId(technician.id);
                 }}
+                newByCategory={newByCategory}
+                onSelectCategory={handleSelectCategory}
                 formatDate={formatDate}
               />
             )}
@@ -557,6 +644,9 @@ export default function App() {
                 onSelect={setActiveReport}
                 showTechnician
                 showFilters
+                typeFilter={reportTypeFilter}
+                onTypeFilterChange={setReportTypeFilter}
+                newReportIds={newReportIds}
                 emptyMessage="No reports in this view yet."
                 formatDate={formatDate}
               />

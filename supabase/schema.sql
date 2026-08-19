@@ -11,6 +11,7 @@ create extension if not exists "pgcrypto";
 create type app_role as enum ('admin', 'technician');
 create type job_type as enum ('survey', 'installation', 'maintenance');
 create type report_status as enum ('pending', 'approved', 'rejected');
+create type urgency_level as enum ('low', 'medium', 'high');
 create type assignment_status as enum ('assigned', 'completed');
 
 -- One row per authenticated user (admin or technician). id matches auth.users.id.
@@ -22,6 +23,10 @@ create table profiles (
   email text not null unique,
   role app_role not null default 'technician',
   phone text,
+  -- Per-category ISO timestamps of when this admin last caught up on new
+  -- submissions, e.g. {"survey": "2026-08-19T10:00:00Z"}. Drives the red
+  -- "new submission" badges in the admin UI.
+  reports_seen_at jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -70,6 +75,8 @@ create table surveys (
   technician_name text,
   site_assignment_id uuid references site_assignments (id) on delete set null,
   notes text,
+  -- How urgently the work found on site needs attention.
+  urgency urgency_level not null default 'medium',
 
   status report_status not null default 'pending',
   reviewed_by uuid references profiles (id) on delete set null,
@@ -83,6 +90,7 @@ create table surveys (
 
 create index surveys_technician_id_idx on surveys (technician_id);
 create index surveys_status_idx on surveys (status);
+create index surveys_urgency_idx on surveys (urgency);
 
 alter table site_assignments
   add constraint site_assignments_survey_fk

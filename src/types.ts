@@ -6,7 +6,12 @@ export interface User {
   email: string;
   role: Role;
   phone?: string;
+  /** Per-category ISO timestamp of when this admin last reviewed new submissions. */
+  reportsSeenAt?: SeenMap;
 }
+
+/** Last-seen timestamp per job category, used to flag new submissions. */
+export type SeenMap = Partial<Record<JobType, string>>;
 
 // The three kinds of site work an admin can send a technician out to do.
 export type JobType = 'survey' | 'installation' | 'maintenance';
@@ -17,6 +22,17 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   survey: 'Survey',
   installation: 'Installation',
   maintenance: 'Maintenance',
+};
+
+/** How urgently the work found on site needs attention. */
+export type Urgency = 'low' | 'medium' | 'high';
+
+export const URGENCY_LEVELS: Urgency[] = ['low', 'medium', 'high'];
+
+export const URGENCY_LABELS: Record<Urgency, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
 };
 
 export type ReportStatus = 'pending' | 'approved' | 'rejected';
@@ -47,6 +63,7 @@ export interface Report {
   technicianName: string;
   reportDate: string;
   notes: string;
+  urgency: Urgency;
   photos: ReportPhoto[];
   status: ReportStatus;
   createdAt: string;
