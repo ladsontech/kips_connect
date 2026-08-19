@@ -173,23 +173,23 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pb-6">
       {submitted && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700 animate-fade-in">
+        <div className="flex items-center gap-2 rounded-xl bg-kibs-deepGreen/10 px-3 py-2.5 text-xs font-bold text-kibs-deepGreen animate-fade-in">
           <CheckCircle2 className="h-4 w-4" />
           Survey submitted for approval.
         </div>
       )}
 
       {submitError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold text-red-700">
+        <div className="rounded-xl bg-kibs-red/10 px-3 py-2.5 text-xs font-bold text-kibs-red">
           {submitError}
         </div>
       )}
 
       {assignment && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div className="flex items-start justify-between gap-2">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
-              <Link2 className="h-3.5 w-3.5 shrink-0" />
+            <p className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+              <Link2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               Assigned by {assignment.assignedBy} — {assignment.siteName}
             </p>
             {onClearAssignment && (
@@ -199,21 +199,20 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
                   onClearAssignment();
                   resetForm();
                 }}
-                className="shrink-0 text-[10px] font-bold text-amber-700 underline decoration-dotted hover:text-amber-900"
+                className="shrink-0 text-[10px] font-bold text-kibs-deepGreen underline decoration-dotted"
               >
                 Start blank instead
               </button>
             )}
           </div>
           {assignment.instructions && (
-            <p className="mt-1.5 text-xs leading-relaxed text-amber-700">{assignment.instructions}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{assignment.instructions}</p>
           )}
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Survey Type</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3.5">
+        <div className="grid grid-cols-2 gap-2">
           {(
             [
               { id: 'new_site', label: 'New Site Survey' },
@@ -226,7 +225,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
               onClick={() => setType(option.id)}
               className={`rounded-xl border py-2.5 text-xs font-bold transition ${
                 type === option.id
-                  ? 'border-kibs-deepGreen bg-kibs-green/15 text-kibs-deepGreen'
+                  ? 'border-kibs-deepGreen bg-kibs-deepGreen/10 text-kibs-deepGreen'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
               }`}
             >
@@ -234,10 +233,6 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Site Details</p>
 
         <div>
           <label className="mb-1 block text-xs font-bold text-slate-700">Site name</label>
@@ -292,64 +287,66 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-          <Camera className="h-3.5 w-3.5" /> CCTV Cameras
-        </p>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {CCTV_CATEGORIES.map((category) => (
-            <div key={category}>
-              <label className="mb-1 block text-[10px] font-bold text-slate-500">{category}</label>
-              <input
-                type="number"
-                min={0}
-                value={cctv[category as CctvCategory]}
-                onChange={(event) =>
-                  setCctv((prev) => ({ ...prev, [category]: Math.max(0, Number(event.target.value) || 0) }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
-              />
-            </div>
-          ))}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 divide-y divide-slate-100">
+        <div className="pb-3.5">
+          <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <Camera className="h-3.5 w-3.5" /> CCTV Cameras
+          </p>
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            {CCTV_CATEGORIES.map((category) => (
+              <div key={category}>
+                <label className="mb-1 block text-[10px] font-bold text-slate-500">{category}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={cctv[category as CctvCategory]}
+                  onChange={(event) =>
+                    setCctv((prev) => ({ ...prev, [category]: Math.max(0, Number(event.target.value) || 0) }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-          <Lightbulb className="h-3.5 w-3.5" /> Flood Lights
-        </p>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {FLOODLIGHT_CATEGORIES.map((category) => (
-            <div key={category}>
-              <label className="mb-1 block text-[10px] font-bold text-slate-500">{category}</label>
-              <input
-                type="number"
-                min={0}
-                value={floodlights[category as FloodlightCategory]}
-                onChange={(event) =>
-                  setFloodlights((prev) => ({
-                    ...prev,
-                    [category]: Math.max(0, Number(event.target.value) || 0),
-                  }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
-              />
-            </div>
-          ))}
+        <div className="py-3.5">
+          <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <Lightbulb className="h-3.5 w-3.5" /> Flood Lights
+          </p>
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            {FLOODLIGHT_CATEGORIES.map((category) => (
+              <div key={category}>
+                <label className="mb-1 block text-[10px] font-bold text-slate-500">{category}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={floodlights[category as FloodlightCategory]}
+                  onChange={(event) =>
+                    setFloodlights((prev) => ({
+                      ...prev,
+                      [category]: Math.max(0, Number(event.target.value) || 0),
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-          <Sun className="h-3.5 w-3.5" /> Solar Panels
-        </p>
-        <input
-          type="number"
-          min={0}
-          value={solarPanels}
-          onChange={(event) => setSolarPanels(Math.max(0, Number(event.target.value) || 0))}
-          className="mt-2 w-32 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
-        />
+        <div className="flex items-center justify-between pt-3.5">
+          <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <Sun className="h-3.5 w-3.5" /> Solar Panels
+          </p>
+          <input
+            type="number"
+            min={0}
+            value={solarPanels}
+            onChange={(event) => setSolarPanels(Math.max(0, Number(event.target.value) || 0))}
+            className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+          />
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -363,12 +360,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
         {photos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
             {photos.map((photo) => (
-              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
                 <img src={photo.previewUrl} alt={photo.file.name} className="h-full w-full object-cover" />
                 <button
                   type="button"
                   onClick={() => removePhoto(photo.id)}
-                  className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white transition hover:bg-red-600"
+                  className="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white transition hover:bg-kibs-red"
                   aria-label={`Remove ${photo.file.name}`}
                 >
                   <X className="h-3 w-3" />
@@ -401,13 +398,11 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
           </label>
         )}
 
-        {photoError && <p className="mt-2 text-xs font-semibold text-red-600">{photoError}</p>}
+        {photoError && <p className="mt-2 text-xs font-semibold text-kibs-red">{photoError}</p>}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-          Notes
-        </label>
+      <div>
+        <label className="mb-1 block text-xs font-bold text-slate-700">Notes</label>
         <textarea
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
@@ -420,7 +415,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
       <button
         type="submit"
         disabled={submitting}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3.5 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
         {submitting ? 'Submitting…' : 'Submit Survey'}

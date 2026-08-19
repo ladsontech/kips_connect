@@ -21,7 +21,7 @@ export function MobileNav<T extends string>({ items, activeId, onChange }: Mobil
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-1.5 py-1 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-md sm:hidden">
+      <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-1.5 py-1 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-md sm:hidden">
         {mainItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeId === item.id;

@@ -39,14 +39,14 @@ export const SurveyList: React.FC<SurveyListProps> = ({
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                 {survey.surveyNumber}
               </span>
-              <span className="rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                 {survey.type === 'new_site' ? 'New Site' : 'Maintenance'}
               </span>
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
                   survey.status === 'approved'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-red-100 text-red-700'
+                    ? 'bg-kibs-deepGreen/10 text-kibs-deepGreen'
+                    : 'bg-kibs-red/10 text-kibs-red'
                 }`}
               >
                 {survey.status === 'approved' ? 'Approved' : 'Pending'}

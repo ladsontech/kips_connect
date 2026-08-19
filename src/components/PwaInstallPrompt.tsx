@@ -105,12 +105,12 @@ export function PwaInstallPrompt() {
   }
 
   return (
-    <div className="fixed inset-x-2 bottom-14 z-40 rounded-2xl border border-emerald-200 bg-white p-3 shadow-xl sm:bottom-4 sm:left-auto sm:right-4 sm:max-w-sm">
+    <div className="fixed inset-x-2 bottom-14 z-40 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl sm:bottom-4 sm:left-auto sm:right-4 sm:max-w-sm">
       <div className="flex items-center gap-3">
         <img
           src="/kibs-logo-mobile.png"
           alt=""
-          className="h-11 w-11 shrink-0 rounded-xl object-contain"
+          className="h-11 w-11 shrink-0 rounded-xl object-cover"
         />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-black text-slate-950">Install Kibs Connect</h2>
@@ -130,7 +130,7 @@ export function PwaInstallPrompt() {
       <button
         type="button"
         onClick={handleInstall}
-        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700"
+        className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen px-3 py-2 text-xs font-black text-white transition hover:bg-green-800"
       >
         <Download className="h-4 w-4" />
         Install App

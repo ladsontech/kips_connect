@@ -29,14 +29,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
         <div className="flex flex-col items-center text-center">
-          <img
-            src="/kibs-logo-desktop.png"
-            alt="Kibs Systems Ltd"
-            className="h-16 w-auto max-w-[280px] object-contain"
-          />
-          <h1 className="mt-4 text-xl font-black text-slate-950">Kibs Connect</h1>
+          <img src="/kibs-logo-mobile.png" alt="Kibs Systems Ltd" className="h-14 w-auto object-contain" />
+          <h1 className="mt-3 text-lg font-black text-slate-950">Kibs Connect</h1>
           <p className="mt-1 text-xs font-medium text-slate-500">
             Sign in to conduct site surveys and manage reports.
           </p>
@@ -78,7 +74,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LogIn className="h-4 w-4" />
             {loading ? 'Signing in…' : 'Sign In'}

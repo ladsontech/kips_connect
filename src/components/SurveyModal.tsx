@@ -54,17 +54,17 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         </button>
 
         <div className="flex flex-wrap items-center gap-2 pr-8">
-          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
             {survey.surveyNumber}
           </span>
-          <span className="rounded-md bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-700">
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
             {survey.type === 'new_site' ? 'New Site Survey' : 'Maintenance'}
           </span>
           <span
             className={`rounded-md px-2.5 py-1 text-xs font-bold ${
               survey.status === 'approved'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-red-100 text-red-700'
+                ? 'bg-kibs-deepGreen/10 text-kibs-deepGreen'
+                : 'bg-kibs-red/10 text-kibs-red'
             }`}
           >
             {survey.status === 'approved' ? 'Approved' : 'Pending'}
@@ -73,7 +73,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
         <h2 className="mt-3 text-xl font-black text-slate-950">{survey.siteName}</h2>
 
-        <div className="mt-4 grid gap-2 rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-600">
+        <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-xs text-slate-600">
           <p className="flex items-center gap-2">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
             {survey.siteLocation}
@@ -96,14 +96,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </p>
         </div>
 
-        <div className="mt-4 space-y-3">
-          <div className="rounded-xl border border-slate-100 p-4">
+        <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
+          <div className="p-4">
             <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
               <Camera className="h-3.5 w-3.5" /> CCTV Cameras · {totalCctv} total
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-2 grid grid-cols-4 gap-2">
               {CCTV_CATEGORIES.map((category) => (
-                <div key={category} className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
+                <div key={category} className="text-center">
                   <p className="text-base font-black text-slate-900">{survey.cctv[category] || 0}</p>
                   <p className="text-[10px] font-semibold text-slate-500">{category}</p>
                 </div>
@@ -111,13 +111,13 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-100 p-4">
+          <div className="p-4">
             <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
               <Lightbulb className="h-3.5 w-3.5" /> Flood Lights · {totalFloodlights} total
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-2 grid grid-cols-4 gap-2">
               {FLOODLIGHT_CATEGORIES.map((category) => (
-                <div key={category} className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
+                <div key={category} className="text-center">
                   <p className="text-base font-black text-slate-900">{survey.floodlights[category] || 0}</p>
                   <p className="text-[10px] font-semibold text-slate-500">{category}</p>
                 </div>
@@ -125,25 +125,25 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-100 p-4">
+          <div className="flex items-center justify-between p-4">
             <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
               <Sun className="h-3.5 w-3.5" /> Solar Panels
             </p>
-            <p className="mt-2 text-base font-black text-slate-900">{survey.solarPanels}</p>
+            <p className="text-base font-black text-slate-900">{survey.solarPanels}</p>
           </div>
 
-          <div className="rounded-xl border border-slate-100 p-4">
+          <div className="p-4">
             <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
               <Camera className="h-3.5 w-3.5" /> Site Photos · {survey.photos.length}
             </p>
             {survey.photos.length > 0 ? (
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              <div className="mt-2 grid grid-cols-4 gap-2">
                 {survey.photos.map((photo) => (
                   <button
                     key={photo.id}
                     type="button"
                     onClick={() => setLightboxUrl(photo.url)}
-                    className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                    className="aspect-square overflow-hidden rounded-lg bg-slate-100"
                   >
                     <img src={photo.url} alt={photo.name} className="h-full w-full object-cover" />
                   </button>
@@ -157,21 +157,23 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </div>
 
           {survey.notes && (
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-700">
+            <div className="p-4 text-xs text-slate-700">
               <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Notes</p>
               <p className="mt-1.5 leading-relaxed">{survey.notes}</p>
             </div>
           )}
+        </div>
 
+        <div className="mt-4">
           {survey.status === 'approved' && survey.approvedBy && (
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-kibs-deepGreen">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Approved by {survey.approvedBy}
               {survey.approvedAt ? ` on ${formatDate(survey.approvedAt)}` : ''}
             </p>
           )}
           {survey.status === 'pending' && (
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-kibs-red">
               <Clock className="h-3.5 w-3.5" />
               Waiting for admin approval
             </p>
@@ -182,7 +184,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           <button
             type="button"
             onClick={() => onApprove(survey.id)}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800"
           >
             <CheckCircle2 className="h-4 w-4" />
             Approve Survey

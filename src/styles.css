@@ -86,6 +86,11 @@ img {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Keep content clear of iOS/Android home-indicator areas */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 .print-export-root {
   display: none;
 }
