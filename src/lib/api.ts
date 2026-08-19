@@ -1,18 +1,17 @@
 import { supabase, publicPhotoUrl } from './supabase';
-import {
-  emptyCctvCounts,
-  emptyFloodlightCounts,
-  type CctvCounts,
-  type FloodlightCounts,
-  type SiteAssignment,
-  type Survey,
-  type SurveyPhoto,
-  type SurveyStatus,
-  type SurveyType,
-  type User,
+import type {
+  JobType,
+  Report,
+  ReportPhoto,
+  ReportStatus,
+  SiteAssignment,
+  User,
 } from '../types';
 
 // ---- Row shapes coming back from PostgREST -------------------------------
+// Note: the database tables are still named `surveys` / `survey_photos` and
+// keep their `survey_*` column names. The app model calls these "reports",
+// so this file is the single place that translation happens.
 
 interface ProfileRow {
   id: string;
@@ -22,17 +21,17 @@ interface ProfileRow {
   phone: string | null;
 }
 
-interface SurveyPhotoRow {
+interface ReportPhotoRow {
   id: string;
   object_path: string;
   original_filename: string | null;
   size_kb: number | null;
 }
 
-interface SurveyRow {
+interface ReportRow {
   id: string;
   survey_number: string;
-  type: SurveyType;
+  type: JobType;
   site_name: string;
   site_location: string;
   contact_person: string | null;
@@ -42,21 +41,13 @@ interface SurveyRow {
   technician_name: string | null;
   site_assignment_id: string | null;
   notes: string | null;
-  cctv_2mp: number;
-  cctv_4mp: number;
-  cctv_5mp: number;
-  cctv_8mp: number;
-  floodlight_30w: number;
-  floodlight_50w: number;
-  floodlight_100w: number;
-  floodlight_200w: number;
-  solar_panels: number;
-  status: SurveyStatus;
-  approved_by: string | null;
-  approved_by_name: string | null;
-  approved_at: string | null;
+  status: ReportStatus;
+  reviewed_by: string | null;
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
   created_at: string;
-  survey_photos?: SurveyPhotoRow[] | null;
+  survey_photos?: ReportPhotoRow[] | null;
 }
 
 interface AssignmentRow {
@@ -65,7 +56,7 @@ interface AssignmentRow {
   site_location: string;
   contact_person: string | null;
   contact_phone: string | null;
-  type: SurveyType;
+  type: JobType;
   instructions: string | null;
   technician_id: string | null;
   technician_name: string | null;
@@ -88,7 +79,7 @@ function profileRowToUser(row: ProfileRow): User {
   };
 }
 
-function photoRowToPhoto(row: SurveyPhotoRow): SurveyPhoto {
+function photoRowToPhoto(row: ReportPhotoRow): ReportPhoto {
   return {
     id: row.id,
     name: row.original_filename ?? 'photo.jpg',
@@ -97,28 +88,10 @@ function photoRowToPhoto(row: SurveyPhotoRow): SurveyPhoto {
   };
 }
 
-function cctvFromRow(row: SurveyRow): CctvCounts {
-  return {
-    '2MP': row.cctv_2mp,
-    '4MP': row.cctv_4mp,
-    '5MP': row.cctv_5mp,
-    '8MP (4K)': row.cctv_8mp,
-  };
-}
-
-function floodlightsFromRow(row: SurveyRow): FloodlightCounts {
-  return {
-    '30W': row.floodlight_30w,
-    '50W': row.floodlight_50w,
-    '100W': row.floodlight_100w,
-    '200W': row.floodlight_200w,
-  };
-}
-
-function surveyRowToSurvey(row: SurveyRow): Survey {
+function reportRowToReport(row: ReportRow): Report {
   return {
     id: row.id,
-    surveyNumber: row.survey_number,
+    reportNumber: row.survey_number,
     type: row.type,
     siteName: row.site_name,
     siteLocation: row.site_location,
@@ -126,16 +99,14 @@ function surveyRowToSurvey(row: SurveyRow): Survey {
     contactPhone: row.contact_phone ?? '',
     technicianId: row.technician_id ?? '',
     technicianName: row.technician_name ?? '',
-    surveyDate: row.survey_date,
+    reportDate: row.survey_date,
     notes: row.notes ?? '',
-    cctv: cctvFromRow(row),
-    floodlights: floodlightsFromRow(row),
-    solarPanels: row.solar_panels,
     photos: (row.survey_photos ?? []).map(photoRowToPhoto),
     status: row.status,
     createdAt: row.created_at,
-    approvedBy: row.approved_by_name ?? undefined,
-    approvedAt: row.approved_at ?? undefined,
+    reviewedBy: row.reviewed_by_name ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    rejectionReason: row.rejection_reason ?? undefined,
     assignmentId: row.site_assignment_id ?? undefined,
   };
 }
@@ -154,11 +125,11 @@ function assignmentRowToAssignment(row: AssignmentRow): SiteAssignment {
     assignedBy: row.assigned_by_name ?? '',
     assignedAt: row.created_at,
     status: row.status,
-    surveyId: row.survey_id ?? undefined,
+    reportId: row.survey_id ?? undefined,
   };
 }
 
-const SURVEY_SELECT = `*, survey_photos(*)`;
+const REPORT_SELECT = `*, survey_photos(*)`;
 
 const ASSIGNMENT_SELECT = '*';
 
@@ -167,7 +138,11 @@ const ASSIGNMENT_SELECT = '*';
 export async function signIn(email: string, password: string): Promise<User> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.user) {
-    throw new Error(error?.message === 'Invalid login credentials' ? 'Incorrect email or password.' : (error?.message ?? 'Sign in failed.'));
+    throw new Error(
+      error?.message === 'Invalid login credentials'
+        ? 'Incorrect email or password.'
+        : (error?.message ?? 'Sign in failed.')
+    );
   }
   const profile = await fetchProfile(data.user.id);
   if (!profile) {
@@ -198,13 +173,13 @@ export async function fetchTechnicians(): Promise<User[]> {
   return (data as ProfileRow[]).map(profileRowToUser);
 }
 
-export async function fetchSurveys(): Promise<Survey[]> {
+export async function fetchReports(): Promise<Report[]> {
   const { data, error } = await supabase
     .from('surveys')
-    .select(SURVEY_SELECT)
+    .select(REPORT_SELECT)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data as unknown as SurveyRow[]).map(surveyRowToSurvey);
+  return (data as unknown as ReportRow[]).map(reportRowToReport);
 }
 
 export async function fetchAssignments(): Promise<SiteAssignment[]> {
@@ -216,14 +191,14 @@ export async function fetchAssignments(): Promise<SiteAssignment[]> {
   return (data as unknown as AssignmentRow[]).map(assignmentRowToAssignment);
 }
 
-// ---- Mutations -------------------------------------------------------------
+// ---- Assignments -------------------------------------------------------------
 
 export interface AssignmentDraft {
   siteName: string;
   siteLocation: string;
   contactPerson: string;
   contactPhone: string;
-  type: SurveyType;
+  type: JobType;
   instructions: string;
   technicianId: string;
   technicianName: string;
@@ -248,24 +223,13 @@ export async function createAssignment(draft: AssignmentDraft, admin: User): Pro
     .select()
     .single();
   if (error || !data) throw new Error(error?.message ?? 'Could not create assignment.');
-  return {
-    id: data.id,
-    siteName: data.site_name,
-    siteLocation: data.site_location,
-    contactPerson: data.contact_person ?? '',
-    contactPhone: data.contact_phone ?? '',
-    type: data.type,
-    instructions: data.instructions ?? '',
-    technicianId: data.technician_id,
-    technicianName: draft.technicianName,
-    assignedBy: admin.name,
-    assignedAt: data.created_at,
-    status: data.status,
-    surveyId: undefined,
-  };
+  return assignmentRowToAssignment(data as AssignmentRow);
 }
 
-export async function updateAssignment(assignmentId: string, draft: AssignmentDraft): Promise<SiteAssignment> {
+export async function updateAssignment(
+  assignmentId: string,
+  draft: AssignmentDraft
+): Promise<SiteAssignment> {
   const { data, error } = await supabase
     .from('site_assignments')
     .update({
@@ -290,22 +254,21 @@ export async function cancelAssignment(assignmentId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export interface SurveyDraft {
-  type: SurveyType;
+// ---- Reports -------------------------------------------------------------
+
+export interface ReportDraft {
+  type: JobType;
   siteName: string;
   siteLocation: string;
   contactPerson: string;
   contactPhone: string;
-  surveyDate: string;
+  reportDate: string;
   notes: string;
-  cctv: CctvCounts;
-  floodlights: FloodlightCounts;
-  solarPanels: number;
   photoFiles: File[];
   assignmentId?: string;
 }
 
-export async function createSurvey(draft: SurveyDraft, technician: User): Promise<Survey> {
+export async function createReport(draft: ReportDraft, technician: User): Promise<Report> {
   const { data: inserted, error } = await supabase
     .from('surveys')
     .insert({
@@ -314,32 +277,23 @@ export async function createSurvey(draft: SurveyDraft, technician: User): Promis
       site_location: draft.siteLocation,
       contact_person: draft.contactPerson || null,
       contact_phone: draft.contactPhone || null,
-      survey_date: draft.surveyDate,
+      survey_date: draft.reportDate,
       technician_id: technician.id,
       technician_name: technician.name,
       site_assignment_id: draft.assignmentId ?? null,
       notes: draft.notes || null,
-      cctv_2mp: draft.cctv['2MP'],
-      cctv_4mp: draft.cctv['4MP'],
-      cctv_5mp: draft.cctv['5MP'],
-      cctv_8mp: draft.cctv['8MP (4K)'],
-      floodlight_30w: draft.floodlights['30W'],
-      floodlight_50w: draft.floodlights['50W'],
-      floodlight_100w: draft.floodlights['100W'],
-      floodlight_200w: draft.floodlights['200W'],
-      solar_panels: draft.solarPanels,
     })
     .select()
     .single();
 
-  if (error || !inserted) throw new Error(error?.message ?? 'Could not save the survey.');
+  if (error || !inserted) throw new Error(error?.message ?? 'Could not save the report.');
 
-  const surveyId = inserted.id as string;
-  const photos: SurveyPhoto[] = [];
+  const reportId = inserted.id as string;
+  const photos: ReportPhoto[] = [];
 
   for (const file of draft.photoFiles) {
     const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const objectPath = `${technician.id}/${surveyId}/${crypto.randomUUID()}-${safeName}`;
+    const objectPath = `${technician.id}/${reportId}/${crypto.randomUUID()}-${safeName}`;
     const { error: uploadError } = await supabase.storage
       .from('survey-photos')
       .upload(objectPath, file, { contentType: file.type || 'image/jpeg' });
@@ -348,7 +302,7 @@ export async function createSurvey(draft: SurveyDraft, technician: User): Promis
     const { data: photoRow, error: photoError } = await supabase
       .from('survey_photos')
       .insert({
-        survey_id: surveyId,
+        survey_id: reportId,
         uploaded_by: technician.id,
         object_path: objectPath,
         original_filename: file.name,
@@ -358,48 +312,44 @@ export async function createSurvey(draft: SurveyDraft, technician: User): Promis
       .single();
     if (photoError || !photoRow) throw new Error(photoError?.message ?? 'Could not save photo.');
 
-    photos.push(photoRowToPhoto(photoRow as SurveyPhotoRow));
+    photos.push(photoRowToPhoto(photoRow as ReportPhotoRow));
   }
 
   if (draft.assignmentId) {
     await supabase
       .from('site_assignments')
-      .update({ status: 'completed', survey_id: surveyId })
+      .update({ status: 'completed', survey_id: reportId })
       .eq('id', draft.assignmentId);
   }
 
-  return {
-    id: surveyId,
-    surveyNumber: inserted.survey_number,
-    type: inserted.type,
-    siteName: inserted.site_name,
-    siteLocation: inserted.site_location,
-    contactPerson: inserted.contact_person ?? '',
-    contactPhone: inserted.contact_phone ?? '',
-    technicianId: technician.id,
-    technicianName: technician.name,
-    surveyDate: inserted.survey_date,
-    notes: inserted.notes ?? '',
-    cctv: cctvFromRow(inserted as SurveyRow),
-    floodlights: floodlightsFromRow(inserted as SurveyRow),
-    solarPanels: inserted.solar_panels,
-    photos,
-    status: inserted.status,
-    createdAt: inserted.created_at,
-    assignmentId: draft.assignmentId,
-  };
+  return { ...reportRowToReport(inserted as ReportRow), photos };
 }
 
-export async function approveSurvey(surveyId: string, admin: User): Promise<void> {
+export async function approveReport(reportId: string, admin: User): Promise<void> {
   const { error } = await supabase
     .from('surveys')
     .update({
       status: 'approved',
-      approved_by: admin.id,
-      approved_by_name: admin.name,
-      approved_at: new Date().toISOString(),
+      reviewed_by: admin.id,
+      reviewed_by_name: admin.name,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: null,
     })
-    .eq('id', surveyId);
+    .eq('id', reportId);
+  if (error) throw new Error(error.message);
+}
+
+export async function rejectReport(reportId: string, admin: User, reason: string): Promise<void> {
+  const { error } = await supabase
+    .from('surveys')
+    .update({
+      status: 'rejected',
+      reviewed_by: admin.id,
+      reviewed_by_name: admin.name,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: reason || null,
+    })
+    .eq('id', reportId);
   if (error) throw new Error(error.message);
 }
 
@@ -437,7 +387,10 @@ export interface UpdateTechnicianInput {
   password?: string;
 }
 
-export async function updateTechnician(technicianId: string, input: UpdateTechnicianInput): Promise<User> {
+export async function updateTechnician(
+  technicianId: string,
+  input: UpdateTechnicianInput
+): Promise<User> {
   const { data, error } = await supabase.functions.invoke('update-technician', {
     body: { technicianId, ...input },
   });
@@ -480,5 +433,3 @@ async function extractFunctionError(error: unknown): Promise<string> {
   }
   return withContext?.message ?? 'Something went wrong. Please try again.';
 }
-
-export { emptyCctvCounts, emptyFloodlightCounts };

@@ -1,210 +1,158 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { ChevronRight, Clock, UserRound } from 'lucide-react';
 import {
-  Building2,
-  Camera,
-  CheckCircle2,
-  ChevronDown,
-  Clock,
-  Lightbulb,
-  ListChecks,
-  Sun,
-} from 'lucide-react';
-import {
-  CCTV_CATEGORIES,
-  FLOODLIGHT_CATEGORIES,
-  totalCount,
+  JOB_TYPES,
+  JOB_TYPE_LABELS,
+  type JobType,
+  type Report,
   type SiteAssignment,
-  type Survey,
+  type User,
 } from '../types';
 import { SurveyList } from './SurveyList';
 
 interface AdminDashboardProps {
-  surveys: Survey[];
+  reports: Report[];
   assignments: SiteAssignment[];
-  onSelectSurvey: (survey: Survey) => void;
+  technicians: User[];
+  onSelectReport: (report: Report) => void;
   onViewAll: () => void;
   onViewSites: () => void;
+  onViewTechnicians: () => void;
   formatDate: (value: string) => string;
 }
 
-interface StatTileProps {
+interface CategoryTileProps {
   label: string;
-  value: string | number;
-  tone?: 'neutral' | 'pending' | 'approved';
-  icon?: React.ElementType;
+  total: number;
+  open: number;
 }
 
-const StatTile: React.FC<StatTileProps> = ({ label, value, tone = 'neutral', icon: Icon }) => {
-  const toneClasses =
-    tone === 'pending'
-      ? 'bg-kibs-ink text-white'
-      : tone === 'approved'
-        ? 'bg-slate-100 text-slate-500'
-        : 'bg-white text-slate-950 shadow-card';
-  const labelClasses = tone === 'pending' ? 'text-white/60' : tone === 'approved' ? 'text-slate-400' : 'text-slate-400';
-
-  return (
-    <div className={`rounded-2xl p-3 text-center ${toneClasses}`}>
-      {Icon && <Icon className="mx-auto mb-1 h-4 w-4 opacity-60" />}
-      <p className="text-xl font-black">{value}</p>
-      <p className={`text-[10px] font-bold uppercase tracking-wide ${labelClasses}`}>{label}</p>
-    </div>
-  );
-};
-
-const EquipmentBar: React.FC<{ label: string; value: number; max: number }> = ({ label, value, max }) => {
-  const pct = max > 0 ? Math.max(value > 0 ? 4 : 0, Math.round((value / max) * 100)) : 0;
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-        <span>{label}</span>
-        <span className="font-black text-slate-900">{value}</span>
-      </div>
-      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full bg-kibs-ink transition-all" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-};
+const CategoryTile: React.FC<CategoryTileProps> = ({ label, total, open }) => (
+  <div className="rounded-2xl bg-white p-3 text-center shadow-card">
+    <p className="text-2xl font-black text-slate-950">{total}</p>
+    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+    <p className="mt-1 text-[10px] font-semibold text-slate-500">
+      {open > 0 ? `${open} open` : 'None open'}
+    </p>
+  </div>
+);
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  surveys,
+  reports,
   assignments,
-  onSelectSurvey,
+  technicians,
+  onSelectReport,
   onViewAll,
   onViewSites,
+  onViewTechnicians,
   formatDate,
 }) => {
-  const [showEquipmentDetail, setShowEquipmentDetail] = useState(false);
   const openAssignments = assignments.filter((a) => a.status === 'assigned');
-  const total = surveys.length;
-  const pending = surveys.filter((s) => s.status === 'pending').length;
-  const approved = surveys.filter((s) => s.status === 'approved').length;
-  const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+  const pendingReports = reports.filter((r) => r.status === 'pending');
 
-  const cctvTotals = CCTV_CATEGORIES.map((category) => ({
-    label: category,
-    value: surveys.reduce((sum, s) => sum + (s.cctv[category] || 0), 0),
+  const categoryStats = JOB_TYPES.map((type: JobType) => ({
+    type,
+    label: JOB_TYPE_LABELS[type],
+    total: assignments.filter((a) => a.type === type).length,
+    open: openAssignments.filter((a) => a.type === type).length,
   }));
-  const floodlightTotals = FLOODLIGHT_CATEGORIES.map((category) => ({
-    label: category,
-    value: surveys.reduce((sum, s) => sum + (s.floodlights[category] || 0), 0),
-  }));
-  const solarTotal = surveys.reduce((sum, s) => sum + s.solarPanels, 0);
-  const totalCctv = surveys.reduce((sum, s) => sum + totalCount(s.cctv), 0);
-  const totalFloodlights = surveys.reduce((sum, s) => sum + totalCount(s.floodlights), 0);
-  const equipmentTotals = [
-    { label: 'CCTV Cameras', value: totalCctv },
-    { label: 'Flood Lights', value: totalFloodlights },
-    { label: 'Solar Panels', value: solarTotal },
-  ];
-  const equipmentMax = Math.max(1, ...equipmentTotals.map((e) => e.value));
-  const cctvMax = Math.max(1, ...cctvTotals.map((e) => e.value));
-  const floodlightMax = Math.max(1, ...floodlightTotals.map((e) => e.value));
 
-  const recentSurveys = [...surveys]
+  // A technician is "on site" while they still have an assigned job open.
+  const technicianStatus = technicians.map((technician) => {
+    const active = openAssignments.filter((a) => a.technicianId === technician.id);
+    return { technician, active };
+  });
+  const onSiteCount = technicianStatus.filter((t) => t.active.length > 0).length;
+
+  const recentReports = [...reports]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatTile label="Total Surveys" value={total} icon={ListChecks} />
-        <StatTile label="Pending" value={pending} tone="pending" icon={Clock} />
-        <StatTile label="Approved" value={approved} tone="approved" icon={CheckCircle2} />
-        <StatTile label="Approval Rate" value={total > 0 ? `${approvalRate}%` : '—'} />
+      <div className="grid grid-cols-3 gap-2">
+        {categoryStats.map((stat) => (
+          <CategoryTile key={stat.type} label={stat.label} total={stat.total} open={stat.open} />
+        ))}
       </div>
+
+      <button
+        type="button"
+        onClick={onViewSites}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl bg-kibs-ink p-4 text-left transition hover:bg-black"
+      >
+        <div className="flex items-center gap-3">
+          <Clock className="h-5 w-5 shrink-0 text-white/70" />
+          <div>
+            <p className="text-sm font-black text-white">
+              {pendingReports.length} report{pendingReports.length === 1 ? '' : 's'} awaiting review
+            </p>
+            <p className="text-[11px] font-semibold text-white/60">
+              {openAssignments.length} site{openAssignments.length === 1 ? '' : 's'} still out with technicians
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-white/60" />
+      </button>
 
       <div className="rounded-2xl bg-white p-4 shadow-card">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-            <Building2 className="h-3.5 w-3.5" /> Sites Awaiting Survey
-            {openAssignments.length > 0 && (
-              <span className="rounded-full bg-kibs-ink px-1.5 py-0.5 text-[10px] font-black text-white">
-                {openAssignments.length}
-              </span>
-            )}
+            <UserRound className="h-3.5 w-3.5" /> Technicians
+            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-600">
+              {onSiteCount}/{technicians.length} on site
+            </span>
           </p>
-          <button type="button" onClick={onViewSites} className="text-xs font-bold text-slate-900 hover:underline">
-            View all
+          <button
+            type="button"
+            onClick={onViewTechnicians}
+            className="text-xs font-bold text-slate-900 hover:underline"
+          >
+            Manage
           </button>
         </div>
-        {openAssignments.length > 0 ? (
+
+        {technicianStatus.length > 0 ? (
           <div className="mt-3 divide-y divide-slate-100">
-            {openAssignments.slice(0, 3).map((assignment) => (
-              <div key={assignment.id} className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+            {technicianStatus.map(({ technician, active }) => (
+              <div key={technician.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-slate-900">{assignment.siteName}</p>
+                  <p className="truncate text-xs font-bold text-slate-900">{technician.name}</p>
                   <p className="truncate text-[11px] text-slate-500">
-                    {assignment.technicianName} · {assignment.type === 'new_site' ? 'New Site' : 'Maintenance'}
+                    {active.length > 0
+                      ? active.map((a) => a.siteName).join(', ')
+                      : 'No open assignments'}
                   </p>
                 </div>
-                <span className="shrink-0 text-[10px] font-semibold text-slate-400">
-                  {formatDate(assignment.assignedAt)}
+                <span
+                  className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                    active.length > 0 ? 'bg-kibs-ink text-white' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {active.length > 0 ? 'On Site' : 'Free'}
                 </span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="mt-2 text-xs text-slate-400">No open assignments — tap Add Site to send a technician out.</p>
-        )}
-      </div>
-
-      <div className="rounded-2xl bg-white p-4 shadow-card">
-        <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-          <Sun className="h-3.5 w-3.5" /> Equipment Reported
-        </p>
-        <div className="mt-3 space-y-2.5">
-          {equipmentTotals.map((item) => (
-            <EquipmentBar key={item.label} label={item.label} value={item.value} max={equipmentMax} />
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowEquipmentDetail((prev) => !prev)}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 border-t border-slate-100 pt-3 text-xs font-bold text-slate-500 transition hover:text-slate-900"
-        >
-          {showEquipmentDetail ? 'Hide breakdown by rating' : 'Show breakdown by rating'}
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showEquipmentDetail ? 'rotate-180' : ''}`} />
-        </button>
-
-        {showEquipmentDetail && (
-          <div className="mt-3 grid gap-5 border-t border-slate-100 pt-3 sm:grid-cols-2">
-            <div className="space-y-2.5">
-              <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                <Camera className="h-3 w-3" /> CCTV Cameras
-              </p>
-              {cctvTotals.map((item) => (
-                <EquipmentBar key={item.label} label={item.label} value={item.value} max={cctvMax} />
-              ))}
-            </div>
-            <div className="space-y-2.5 border-t border-slate-100 pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5">
-              <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                <Lightbulb className="h-3 w-3" /> Flood Lights
-              </p>
-              {floodlightTotals.map((item) => (
-                <EquipmentBar key={item.label} label={item.label} value={item.value} max={floodlightMax} />
-              ))}
-            </div>
-          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            No technicians yet — use Add Technician to create the first account.
+          </p>
         )}
       </div>
 
       <div>
         <div className="mb-2.5 flex items-center justify-between">
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-            Recent Surveys
-          </p>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Recent Reports</p>
           <button type="button" onClick={onViewAll} className="text-xs font-bold text-slate-900 hover:underline">
             View all
           </button>
         </div>
         <SurveyList
-          surveys={recentSurveys}
-          onSelect={onSelectSurvey}
+          surveys={recentReports}
+          onSelect={onSelectReport}
           showTechnician
-          emptyMessage="No surveys submitted yet."
+          emptyMessage="No reports submitted yet."
           formatDate={formatDate}
         />
       </div>

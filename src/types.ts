@@ -8,75 +8,69 @@ export interface User {
   phone?: string;
 }
 
-export type SurveyType = 'new_site' | 'maintenance';
+// The three kinds of site work an admin can send a technician out to do.
+export type JobType = 'survey' | 'installation' | 'maintenance';
 
-export type SurveyStatus = 'pending' | 'approved';
+export const JOB_TYPES: JobType[] = ['survey', 'installation', 'maintenance'];
 
-export const CCTV_CATEGORIES = ['2MP', '4MP', '5MP', '8MP (4K)'] as const;
-export type CctvCategory = (typeof CCTV_CATEGORIES)[number];
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
+  survey: 'Survey',
+  installation: 'Installation',
+  maintenance: 'Maintenance',
+};
 
-export const FLOODLIGHT_CATEGORIES = ['30W', '50W', '100W', '200W'] as const;
-export type FloodlightCategory = (typeof FLOODLIGHT_CATEGORIES)[number];
+export type ReportStatus = 'pending' | 'approved' | 'rejected';
 
-export type CctvCounts = Record<CctvCategory, number>;
-export type FloodlightCounts = Record<FloodlightCategory, number>;
+export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
 
-export interface SurveyPhoto {
+export interface ReportPhoto {
   id: string;
   name: string;
   url: string;
   sizeKb: number;
 }
 
-export interface Survey {
+// What a technician submits after visiting a site.
+export interface Report {
   id: string;
-  surveyNumber: string;
-  type: SurveyType;
+  reportNumber: string;
+  type: JobType;
   siteName: string;
   siteLocation: string;
   contactPerson: string;
   contactPhone: string;
   technicianId: string;
   technicianName: string;
-  surveyDate: string;
+  reportDate: string;
   notes: string;
-  cctv: CctvCounts;
-  floodlights: FloodlightCounts;
-  solarPanels: number;
-  photos: SurveyPhoto[];
-  status: SurveyStatus;
+  photos: ReportPhoto[];
+  status: ReportStatus;
   createdAt: string;
-  approvedBy?: string;
-  approvedAt?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
   assignmentId?: string;
 }
 
 export type AssignmentStatus = 'assigned' | 'completed';
 
+// A site the admin has assigned to a technician.
 export interface SiteAssignment {
   id: string;
   siteName: string;
   siteLocation: string;
   contactPerson: string;
   contactPhone: string;
-  type: SurveyType;
+  type: JobType;
   instructions: string;
   technicianId: string;
   technicianName: string;
   assignedBy: string;
   assignedAt: string;
   status: AssignmentStatus;
-  surveyId?: string;
-}
-
-export function emptyCctvCounts(): CctvCounts {
-  return { '2MP': 0, '4MP': 0, '5MP': 0, '8MP (4K)': 0 };
-}
-
-export function emptyFloodlightCounts(): FloodlightCounts {
-  return { '30W': 0, '50W': 0, '100W': 0, '200W': 0 };
-}
-
-export function totalCount(record: Record<string, number>): number {
-  return Object.values(record).reduce((sum, value) => sum + (value || 0), 0);
+  reportId?: string;
 }

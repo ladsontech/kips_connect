@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
-import type { SiteAssignment, SurveyType, User } from '../types';
+import { JOB_TYPES, JOB_TYPE_LABELS, type JobType, type SiteAssignment, type User } from '../types';
 import type { AssignmentDraft } from '../lib/api';
 
 interface EditAssignmentModalProps {
@@ -22,7 +22,7 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
   const [siteLocation, setSiteLocation] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [type, setType] = useState<SurveyType>('new_site');
+  const [type, setType] = useState<JobType>('survey');
   const [technicianId, setTechnicianId] = useState('');
   const [instructions, setInstructions] = useState('');
   const [error, setError] = useState('');
@@ -100,26 +100,24 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
         </p>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
-          <div className="grid grid-cols-2 gap-2">
-            {(
-              [
-                { id: 'new_site', label: 'New Site Survey' },
-                { id: 'maintenance', label: 'Maintenance' },
-              ] as { id: SurveyType; label: string }[]
-            ).map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setType(option.id)}
-                className={`rounded-xl border py-2.5 text-xs font-bold transition ${
-                  type === option.id
-                    ? 'border-kibs-ink bg-kibs-ink text-white'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div>
+            <label className="mb-1.5 block text-xs font-bold text-slate-700">Job type</label>
+            <div className="grid grid-cols-3 gap-2">
+              {JOB_TYPES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setType(option)}
+                  className={`rounded-xl border py-2.5 text-xs font-bold transition ${
+                    type === option
+                      ? 'border-kibs-ink bg-kibs-ink text-white'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  {JOB_TYPE_LABELS[option]}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

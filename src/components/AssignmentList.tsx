@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, ChevronRight, MapPin, Pencil, Phone, User as UserIcon, X } from 'lucide-react';
-import type { SiteAssignment } from '../types';
+import { JOB_TYPE_LABELS, type SiteAssignment } from '../types';
 
 interface AssignmentListProps {
   assignments: SiteAssignment[];
@@ -44,7 +44,7 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                {assignment.type === 'new_site' ? 'New Site' : 'Maintenance'}
+                {JOB_TYPE_LABELS[assignment.type]}
               </span>
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
@@ -53,7 +53,7 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
                     : 'bg-kibs-ink text-white'
                 }`}
               >
-                {assignment.status === 'completed' ? 'Completed' : 'Awaiting Survey'}
+                {assignment.status === 'completed' ? 'Completed' : 'On Site'}
               </span>
             </div>
             {onEdit && (
@@ -108,7 +108,7 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
               onClick={() => onStartSurvey(assignment)}
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-kibs-ink py-2.5 text-xs font-black text-white transition hover:bg-black"
             >
-              Start Survey
+              Start Report
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
           )}
@@ -124,14 +124,14 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
             </button>
           )}
 
-          {assignment.status === 'completed' && assignment.surveyId && onViewSurvey && (
+          {assignment.status === 'completed' && assignment.reportId && onViewSurvey && (
             <button
               type="button"
-              onClick={() => onViewSurvey(assignment.surveyId as string)}
+              onClick={() => onViewSurvey(assignment.reportId as string)}
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-200"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              View Submitted Survey
+              View Submitted Report
             </button>
           )}
         </div>

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Building2, ClipboardList, Mail, Pencil, Phone, Trash2, UserRound } from 'lucide-react';
-import type { SiteAssignment, Survey, User } from '../types';
+import { ClipboardList, Mail, MapPin, Pencil, Phone, Trash2, UserRound } from 'lucide-react';
+import type { Report, SiteAssignment, User } from '../types';
 
 interface TechnicianManagerProps {
   technicians: User[];
-  surveys: Survey[];
+  reports: Report[];
   assignments: SiteAssignment[];
   onEdit: (technician: User) => void;
   onRemove: (technicianId: string) => void;
@@ -12,7 +12,7 @@ interface TechnicianManagerProps {
 
 export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
   technicians,
-  surveys,
+  reports,
   assignments,
   onEdit,
   onRemove,
@@ -28,26 +28,36 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
   return (
     <div className="space-y-2.5">
       {technicians.map((technician) => {
-        const surveyCount = surveys.filter((s) => s.technicianId === technician.id).length;
-        const openAssignments = assignments.filter(
+        const reportCount = reports.filter((r) => r.technicianId === technician.id).length;
+        const activeSites = assignments.filter(
           (a) => a.technicianId === technician.id && a.status === 'assigned'
-        ).length;
+        );
+        const onSite = activeSites.length > 0;
 
         return (
           <div key={technician.id} className="rounded-2xl bg-white p-4 shadow-card">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-kibs-ink">
                   <UserRound className="h-5 w-5" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{technician.name}</h3>
-                  <p className="flex items-center gap-1 text-xs text-slate-500">
-                    <Mail className="h-3 w-3" /> {technician.email}
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900">{technician.name}</h3>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                        onSite ? 'bg-kibs-ink text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {onSite ? 'On Site' : 'Free'}
+                    </span>
+                  </div>
+                  <p className="flex items-center gap-1 truncate text-xs text-slate-500">
+                    <Mail className="h-3 w-3 shrink-0" /> {technician.email}
                   </p>
                   {technician.phone && (
                     <p className="flex items-center gap-1 text-xs text-slate-500">
-                      <Phone className="h-3 w-3" /> {technician.phone}
+                      <Phone className="h-3 w-3 shrink-0" /> {technician.phone}
                     </p>
                   )}
                 </div>
@@ -72,14 +82,16 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
               </div>
             </div>
 
-            <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-600">
+            <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-600">
               <span className="flex items-center gap-1.5">
-                <ClipboardList className="h-3.5 w-3.5 text-slate-400" /> {surveyCount} survey
-                {surveyCount === 1 ? '' : 's'}
+                <ClipboardList className="h-3.5 w-3.5 text-slate-400" /> {reportCount} report
+                {reportCount === 1 ? '' : 's'} submitted
               </span>
-              <span className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-slate-400" /> {openAssignments} open assignment
-                {openAssignments === 1 ? '' : 's'}
+              <span className="flex items-start gap-1.5">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <span className="min-w-0">
+                  {onSite ? activeSites.map((a) => a.siteName).join(', ') : 'No open assignments'}
+                </span>
               </span>
             </div>
           </div>
