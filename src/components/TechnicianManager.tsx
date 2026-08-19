@@ -1,11 +1,12 @@
 import React from 'react';
-import { ClipboardList, Mail, MapPin, Pencil, Phone, Trash2, UserRound } from 'lucide-react';
+import { ChevronRight, ClipboardList, Mail, MapPin, Pencil, Phone, Trash2, UserRound } from 'lucide-react';
 import type { Report, SiteAssignment, User } from '../types';
 
 interface TechnicianManagerProps {
   technicians: User[];
   reports: Report[];
   assignments: SiteAssignment[];
+  onSelect: (technician: User) => void;
   onEdit: (technician: User) => void;
   onRemove: (technicianId: string) => void;
 }
@@ -14,6 +15,7 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
   technicians,
   reports,
   assignments,
+  onSelect,
   onEdit,
   onRemove,
 }) => {
@@ -35,7 +37,19 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
         const onSite = activeSites.length > 0;
 
         return (
-          <div key={technician.id} className="rounded-2xl bg-white p-4 shadow-card">
+          <div
+            key={technician.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect(technician)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect(technician);
+              }
+            }}
+            className="cursor-pointer rounded-2xl bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-cardHover"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-kibs-ink">
@@ -65,7 +79,10 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
               <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => onEdit(technician)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEdit(technician);
+                  }}
                   className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-kibs-ink"
                   aria-label={`Edit ${technician.name}`}
                 >
@@ -73,12 +90,16 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onRemove(technician.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove(technician.id);
+                  }}
                   className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                   aria-label={`Remove ${technician.name}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
+                <ChevronRight className="h-4 w-4 text-slate-300" />
               </div>
             </div>
 

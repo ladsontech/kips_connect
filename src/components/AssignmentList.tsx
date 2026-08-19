@@ -40,7 +40,7 @@ export const AssignmentList: React.FC<AssignmentListProps> = ({
         const contactHidden = !showTechnician && assignment.status === 'completed';
 
         return (
-        <div key={assignment.id} className="rounded-2xl bg-white p-4 shadow-card">
+        <div key={assignment.id} className="rounded-2xl bg-white p-4 shadow-card transition hover:shadow-cardHover">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">

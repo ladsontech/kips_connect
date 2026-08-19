@@ -7,7 +7,9 @@ import {
   LayoutDashboard,
   LayoutList,
   Loader2,
+  Plus,
   PlusCircle,
+  UserPlus,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -24,6 +26,7 @@ import { AssignmentList } from './components/AssignmentList';
 import { AssignSiteModal } from './components/AssignSiteModal';
 import { EditAssignmentModal } from './components/EditAssignmentModal';
 import { TechnicianManager } from './components/TechnicianManager';
+import { TechnicianDetail } from './components/TechnicianDetail';
 import { AddTechnicianModal } from './components/AddTechnicianModal';
 import { EditTechnicianModal } from './components/EditTechnicianModal';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
@@ -59,6 +62,16 @@ function formatDate(value: string) {
 type TechnicianTab = 'sites' | 'new' | 'mine';
 type AdminTab = 'overview' | 'sites' | 'technicians' | 'pending' | 'approved' | 'rejected' | 'all';
 
+const ADMIN_PAGE_META: Record<AdminTab, { title: string; description: string }> = {
+  overview: { title: 'Overview', description: "Today's workload at a glance." },
+  sites: { title: 'Sites', description: 'Every site assigned to a technician.' },
+  technicians: { title: 'Technicians', description: 'Field team, availability and history.' },
+  pending: { title: 'Pending Reports', description: 'Reports waiting on your review.' },
+  approved: { title: 'Approved Reports', description: 'Reports you have signed off.' },
+  rejected: { title: 'Rejected Reports', description: 'Reports sent back for correction.' },
+  all: { title: 'All Reports', description: 'Every report submitted from the field.' },
+};
+
 function ConfigNotice() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -85,6 +98,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [technicianTab, setTechnicianTab] = useState<TechnicianTab>('sites');
   const [adminTab, setAdminTab] = useState<AdminTab>('overview');
+  const [viewingTechnicianId, setViewingTechnicianId] = useState<string | null>(null);
   const [activeReport, setActiveReport] = useState<Report | null>(null);
   const [prefillAssignment, setPrefillAssignment] = useState<SiteAssignment | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -176,6 +190,13 @@ export default function App() {
   const rejectedReports = useMemo(() => reports.filter((r) => r.status === 'rejected'), [reports]);
   const openAssignments = useMemo(() => assignments.filter((a) => a.status === 'assigned'), [assignments]);
 
+  // Resolved from state rather than stored, so edits to a technician are
+  // reflected immediately while their detail page is open.
+  const viewingTechnician = useMemo(
+    () => technicians.find((t) => t.id === viewingTechnicianId) ?? null,
+    [technicians, viewingTechnicianId]
+  );
+
   if (!isSupabaseConfigured) {
     return <ConfigNotice />;
   }
@@ -197,6 +218,12 @@ export default function App() {
     setUser(null);
     setActiveReport(null);
     setPrefillAssignment(null);
+    setViewingTechnicianId(null);
+  }
+
+  function goToAdminTab(tab: AdminTab) {
+    setViewingTechnicianId(null);
+    setAdminTab(tab);
   }
 
   async function handleCreateReport(draft: ReportDraft) {
@@ -305,6 +332,7 @@ export default function App() {
     try {
       await deleteTechnician(technicianId);
       setTechnicians((prev) => prev.filter((t) => t.id !== technicianId));
+      setViewingTechnicianId((prev) => (prev === technicianId ? null : prev));
     } catch (err) {
       flashError(err instanceof Error ? err.message : 'Could not remove this technician.');
     }
@@ -325,24 +353,25 @@ export default function App() {
     { id: 'mine' as TechnicianTab, label: 'My Reports', icon: ClipboardList },
   ];
 
-  // The 3 major destinations (Overview/Sites/Technicians) live in the
-  // always-visible bottom bar on mobile and come first in the desktop
-  // sidebar; the rest (report status filters) live in the Header's drawer
-  // on mobile and simply continue the sidebar list on desktop.
-  const adminNavItems = [
+  // The 3 major destinations live in the always-visible bottom bar on mobile
+  // and lead the desktop sidebar; the report status filters live in the
+  // Header's drawer on mobile and form the sidebar's second group.
+  const primaryAdminNavItems = [
     { id: 'overview' as AdminTab, label: 'Overview', icon: LayoutDashboard },
     { id: 'sites' as AdminTab, label: 'Sites', icon: Building2, count: openAssignments.length },
     { id: 'technicians' as AdminTab, label: 'Technicians', icon: Users },
+  ];
+  const secondaryAdminNavItems = [
     { id: 'pending' as AdminTab, label: 'Pending', icon: Clock, count: pendingReports.length },
     { id: 'approved' as AdminTab, label: 'Approved', icon: CheckCircle2 },
     { id: 'rejected' as AdminTab, label: 'Rejected', icon: XCircle },
     { id: 'all' as AdminTab, label: 'All Reports', icon: LayoutList },
   ];
-  const primaryAdminNavItems = adminNavItems.slice(0, 3);
-  const secondaryAdminNavItems = adminNavItems.slice(3);
+
+  const pageMeta = ADMIN_PAGE_META[adminTab];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 sm:pb-8">
+    <div className="min-h-screen bg-slate-50 pb-20 lg:pb-10">
       <Header
         user={user}
         onLogout={handleLogout}
@@ -350,7 +379,7 @@ export default function App() {
         setMobileMenuOpen={setMobileMenuOpen}
         secondaryNavItems={user.role === 'admin' ? secondaryAdminNavItems : undefined}
         activeNavId={user.role === 'admin' ? adminTab : undefined}
-        onNavChange={user.role === 'admin' ? (id) => setAdminTab(id as AdminTab) : undefined}
+        onNavChange={user.role === 'admin' ? (id) => goToAdminTab(id as AdminTab) : undefined}
       />
 
       {(actionError || loadError) && (
@@ -367,7 +396,7 @@ export default function App() {
         </div>
       ) : user.role === 'technician' ? (
         <main className="mx-auto max-w-2xl px-3 py-4 sm:px-6 sm:py-6">
-          <div className="mb-4 hidden gap-2 sm:flex">
+          <div className="mb-4 hidden gap-2 lg:flex">
             {technicianNavItems.map((item) => {
               const Icon = item.icon;
               const active = technicianTab === item.id;
@@ -376,10 +405,8 @@ export default function App() {
                   key={item.id}
                   type="button"
                   onClick={() => setTechnicianTab(item.id)}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition ${
-                    active
-                      ? 'bg-kibs-ink text-white shadow-card'
-                      : 'bg-white text-slate-600 hover:bg-slate-100'
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-card transition ${
+                    active ? 'bg-kibs-ink text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -418,25 +445,61 @@ export default function App() {
           <MobileNav items={technicianNavItems} activeId={technicianTab} onChange={setTechnicianTab} />
         </main>
       ) : (
-        <div className="mx-auto flex max-w-6xl gap-6 px-3 py-4 sm:px-6 sm:py-6">
+        <div className="mx-auto flex max-w-6xl gap-6 px-3 py-4 sm:px-6 lg:py-8">
           <Sidebar
-            items={adminNavItems}
+            groups={[
+              { label: 'Workspace', items: primaryAdminNavItems },
+              { label: 'Reports', items: secondaryAdminNavItems },
+            ]}
             activeId={adminTab}
-            onChange={setAdminTab}
+            onChange={goToAdminTab}
             onAddSite={() => setShowAssignModal(true)}
             onAddTechnician={() => setShowAddTechnicianModal(true)}
           />
 
           <main className="min-w-0 flex-1">
+            {!viewingTechnician && (
+              <div className="mb-5 hidden items-end justify-between gap-4 lg:flex">
+                <div>
+                  <h1 className="text-2xl font-black tracking-tight text-slate-950">{pageMeta.title}</h1>
+                  <p className="mt-0.5 text-sm text-slate-500">{pageMeta.description}</p>
+                </div>
+                {adminTab === 'sites' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignModal(true)}
+                    className="flex shrink-0 items-center gap-2 rounded-xl bg-kibs-ink px-4 py-2.5 text-sm font-black text-white shadow-card transition hover:bg-black"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Site
+                  </button>
+                )}
+                {adminTab === 'technicians' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTechnicianModal(true)}
+                    className="flex shrink-0 items-center gap-2 rounded-xl bg-kibs-ink px-4 py-2.5 text-sm font-black text-white shadow-card transition hover:bg-black"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Add Technician
+                  </button>
+                )}
+              </div>
+            )}
+
             {adminTab === 'overview' && (
               <AdminDashboard
                 reports={reports}
                 assignments={assignments}
                 technicians={technicians}
                 onSelectReport={setActiveReport}
-                onViewAll={() => setAdminTab('all')}
-                onViewSites={() => setAdminTab('pending')}
-                onViewTechnicians={() => setAdminTab('technicians')}
+                onViewAll={() => goToAdminTab('all')}
+                onViewSites={() => goToAdminTab('pending')}
+                onViewTechnicians={() => goToAdminTab('technicians')}
+                onSelectTechnician={(technician) => {
+                  setAdminTab('technicians');
+                  setViewingTechnicianId(technician.id);
+                }}
                 formatDate={formatDate}
               />
             )}
@@ -451,15 +514,29 @@ export default function App() {
                 onEdit={setEditingAssignment}
               />
             )}
-            {adminTab === 'technicians' && (
-              <TechnicianManager
-                technicians={technicians}
-                reports={reports}
-                assignments={assignments}
-                onEdit={setEditingTechnician}
-                onRemove={handleRemoveTechnician}
-              />
-            )}
+            {adminTab === 'technicians' &&
+              (viewingTechnician ? (
+                <TechnicianDetail
+                  technician={viewingTechnician}
+                  reports={reports}
+                  assignments={assignments}
+                  onBack={() => setViewingTechnicianId(null)}
+                  onEdit={setEditingTechnician}
+                  onRemove={handleRemoveTechnician}
+                  onSelectReport={setActiveReport}
+                  onViewReport={handleViewReport}
+                  formatDate={formatDate}
+                />
+              ) : (
+                <TechnicianManager
+                  technicians={technicians}
+                  reports={reports}
+                  assignments={assignments}
+                  onSelect={(technician) => setViewingTechnicianId(technician.id)}
+                  onEdit={setEditingTechnician}
+                  onRemove={handleRemoveTechnician}
+                />
+              ))}
             {(adminTab === 'pending' ||
               adminTab === 'approved' ||
               adminTab === 'rejected' ||
@@ -475,7 +552,7 @@ export default function App() {
             )}
           </main>
 
-          <MobileNav items={primaryAdminNavItems} activeId={adminTab} onChange={setAdminTab} />
+          <MobileNav items={primaryAdminNavItems} activeId={adminTab} onChange={goToAdminTab} />
         </div>
       )}
 

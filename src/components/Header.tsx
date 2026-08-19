@@ -53,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className="hidden items-center gap-3 sm:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100/80 px-3 py-1.5">
             <RoleIcon className="h-4 w-4 text-kibs-ink" />
             <div className="leading-tight">
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 sm:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 lg:hidden"
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {mobileMenuOpen && (
-        <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2.5 sm:hidden">
+        <div className="border-t border-slate-100 bg-slate-50/90 px-3 py-2.5 lg:hidden">
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2">
             <div className="flex items-center gap-2">
               <RoleIcon className="h-4 w-4 text-kibs-ink" />

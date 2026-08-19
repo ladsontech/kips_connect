@@ -18,7 +18,7 @@ interface MobileNavProps<T extends string> {
 // Anything beyond the 3 primary items belongs in the Header's top drawer.
 export function MobileNav<T extends string>({ items, activeId, onChange }: MobileNavProps<T>) {
   return (
-    <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-1.5 py-1 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-md sm:hidden">
+    <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-1.5 py-1 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] backdrop-blur-md lg:hidden">
       {items.map((item) => {
         const Icon = item.icon;
         const isActive = activeId === item.id;
