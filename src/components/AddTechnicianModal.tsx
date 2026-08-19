@@ -98,7 +98,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs sm:items-center sm:p-4 animate-fade-in">
       <div className="fixed inset-0" onClick={handleClose} aria-label="Close modal backdrop" />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-5 shadow-2xl animate-slide-up sm:rounded-2xl sm:p-6">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl animate-slide-up sm:rounded-3xl sm:p-6">
         <button
           type="button"
           onClick={handleClose}
@@ -110,7 +110,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
         {created ? (
           <>
             <div className="flex items-center gap-2 pr-8">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-kibs-deepGreen/10 text-kibs-deepGreen">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-kibs-ink/10 text-kibs-ink">
                 <Check className="h-5 w-5" />
               </div>
               <h2 className="text-lg font-black text-slate-950">Technician Added</h2>
@@ -119,7 +119,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
               Share these sign-in details with {created.name} — they won't be shown again.
             </p>
 
-            <div className="mt-4 space-y-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+            <div className="mt-4 space-y-2.5 rounded-xl bg-slate-50 p-3.5">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Email</p>
                 <p className="text-sm font-bold text-slate-900">{created.email}</p>
@@ -135,14 +135,14 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
               onClick={handleCopy}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
             >
-              {copied ? <Check className="h-3.5 w-3.5 text-kibs-deepGreen" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? <Check className="h-3.5 w-3.5 text-kibs-ink" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? 'Copied' : 'Copy Credentials'}
             </button>
 
             <button
               type="button"
               onClick={handleClose}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-ink py-3 text-sm font-black text-white transition hover:bg-black"
             >
               Done
             </button>
@@ -162,7 +162,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="e.g. Musa Sserwadda"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
                 />
               </div>
 
@@ -174,7 +174,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="name@kibs.com"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
                 />
               </div>
 
@@ -184,13 +184,13 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   placeholder="+256 700 000 000"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
                 />
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-bold text-slate-700">Password</label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 focus-within:border-kibs-deepGreen focus-within:bg-white">
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 focus-within:border-kibs-ink focus-within:bg-white">
                   <input
                     required
                     type={showPassword ? 'text' : 'password'}
@@ -226,7 +226,7 @@ export const AddTechnicianModal: React.FC<AddTechnicianModalProps> = ({
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-ink py-3 text-sm font-black text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                 {submitting ? 'Creating…' : 'Create Technician Account'}

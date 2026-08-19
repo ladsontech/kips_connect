@@ -32,7 +32,7 @@ export const SurveyList: React.FC<SurveyListProps> = ({
           key={survey.id}
           type="button"
           onClick={() => onSelect(survey)}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:shadow-xs"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white p-4 text-left shadow-card transition hover:-translate-y-0.5"
         >
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -45,8 +45,8 @@ export const SurveyList: React.FC<SurveyListProps> = ({
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
                   survey.status === 'approved'
-                    ? 'bg-kibs-deepGreen/10 text-kibs-deepGreen'
-                    : 'bg-kibs-red/10 text-kibs-red'
+                    ? 'bg-slate-100 text-slate-500'
+                    : 'bg-kibs-ink text-white'
                 }`}
               >
                 {survey.status === 'approved' ? 'Approved' : 'Pending'}

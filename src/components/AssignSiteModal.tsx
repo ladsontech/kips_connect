@@ -77,7 +77,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs sm:items-center sm:p-4 animate-fade-in">
       <div className="fixed inset-0" onClick={handleClose} aria-label="Close modal backdrop" />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-5 shadow-2xl animate-slide-up sm:rounded-2xl sm:p-6">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl animate-slide-up sm:rounded-3xl sm:p-6">
         <button
           type="button"
           onClick={handleClose}
@@ -105,7 +105,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
                 onClick={() => setType(option.id)}
                 className={`rounded-xl border py-2.5 text-xs font-bold transition ${
                   type === option.id
-                    ? 'border-kibs-deepGreen bg-kibs-green/15 text-kibs-deepGreen'
+                    ? 'border-kibs-ink bg-kibs-ink text-white'
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                 }`}
               >
@@ -121,7 +121,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
               value={siteName}
               onChange={(event) => setSiteName(event.target.value)}
               placeholder="e.g. Greenview Estate"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
             />
           </div>
 
@@ -132,7 +132,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
               value={siteLocation}
               onChange={(event) => setSiteLocation(event.target.value)}
               placeholder="e.g. Bukoto, Plot 22"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
             />
           </div>
 
@@ -142,7 +142,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
               <input
                 value={contactPerson}
                 onChange={(event) => setContactPerson(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
               />
             </div>
             <div>
@@ -150,7 +150,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
               <input
                 value={contactPhone}
                 onChange={(event) => setContactPhone(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
               />
             </div>
           </div>
@@ -162,7 +162,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
                 required
                 value={technicianId}
                 onChange={(event) => setTechnicianId(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
               >
                 {technicians.map((technician) => (
                   <option key={technician.id} value={technician.id}>
@@ -184,7 +184,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
               onChange={(event) => setInstructions(event.target.value)}
               rows={3}
               placeholder="Anything the technician should know before visiting..."
-              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
             />
           </div>
 
@@ -193,7 +193,7 @@ export const AssignSiteModal: React.FC<AssignSiteModalProps> = ({
           <button
             type="submit"
             disabled={technicians.length === 0 || submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-ink py-3 text-sm font-black text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {submitting ? 'Assigning…' : 'Assign Site'}

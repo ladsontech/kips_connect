@@ -29,7 +29,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-card sm:p-8">
         <div className="flex flex-col items-center text-center">
           <img src="/kibs-logo-mobile.png" alt="Kibs Systems Ltd" className="h-14 w-auto object-contain" />
           <h1 className="mt-3 text-lg font-black text-slate-950">Kibs Connect</h1>
@@ -41,7 +41,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
           <div>
             <label className="mb-1 block text-xs font-bold text-slate-700">Email</label>
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-kibs-deepGreen focus-within:bg-white">
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-kibs-ink focus-within:bg-white">
               <Mail className="h-4 w-4 text-slate-400" />
               <input
                 type="email"
@@ -56,7 +56,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
           <div>
             <label className="mb-1 block text-xs font-bold text-slate-700">Password</label>
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-kibs-deepGreen focus-within:bg-white">
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-kibs-ink focus-within:bg-white">
               <Lock className="h-4 w-4 text-slate-400" />
               <input
                 type="password"
@@ -74,7 +74,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-ink py-3 text-sm font-black text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LogIn className="h-4 w-4" />
             {loading ? 'Signing in…' : 'Sign In'}

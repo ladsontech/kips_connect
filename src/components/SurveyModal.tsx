@@ -44,7 +44,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs sm:items-center sm:p-4 animate-fade-in">
       <div className="fixed inset-0" onClick={onClose} aria-label="Close modal backdrop" />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-5 shadow-2xl animate-slide-up sm:rounded-2xl sm:p-6">
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl animate-slide-up sm:rounded-3xl sm:p-6">
         <button
           type="button"
           onClick={onClose}
@@ -63,8 +63,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           <span
             className={`rounded-md px-2.5 py-1 text-xs font-bold ${
               survey.status === 'approved'
-                ? 'bg-kibs-deepGreen/10 text-kibs-deepGreen'
-                : 'bg-kibs-red/10 text-kibs-red'
+                ? 'bg-slate-100 text-slate-500'
+                : 'bg-kibs-ink text-white'
             }`}
           >
             {survey.status === 'approved' ? 'Approved' : 'Pending'}
@@ -96,7 +96,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </p>
         </div>
 
-        <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
+        <div className="mt-4 divide-y divide-slate-100 rounded-xl bg-slate-50/60">
           <div className="p-4">
             <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
               <Camera className="h-3.5 w-3.5" /> CCTV Cameras · {totalCctv} total
@@ -166,14 +166,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
         <div className="mt-4">
           {survey.status === 'approved' && survey.approvedBy && (
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-kibs-deepGreen">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Approved by {survey.approvedBy}
               {survey.approvedAt ? ` on ${formatDate(survey.approvedAt)}` : ''}
             </p>
           )}
           {survey.status === 'pending' && (
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-kibs-red">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
               <Clock className="h-3.5 w-3.5" />
               Waiting for admin approval
             </p>
@@ -184,7 +184,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           <button
             type="button"
             onClick={() => onApprove(survey.id)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3 text-sm font-black text-white transition hover:bg-green-800"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-ink py-3 text-sm font-black text-white transition hover:bg-black"
           >
             <CheckCircle2 className="h-4 w-4" />
             Approve Survey

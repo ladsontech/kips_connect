@@ -36,16 +36,15 @@ interface StatTileProps {
 const StatTile: React.FC<StatTileProps> = ({ label, value, tone = 'neutral', icon: Icon }) => {
   const toneClasses =
     tone === 'pending'
-      ? 'border-kibs-red/15 bg-kibs-red/5 text-kibs-red'
+      ? 'bg-kibs-ink text-white'
       : tone === 'approved'
-        ? 'border-kibs-deepGreen/15 bg-kibs-deepGreen/5 text-kibs-deepGreen'
-        : 'border-slate-200 bg-white text-slate-950';
-  const labelClasses =
-    tone === 'pending' ? 'text-kibs-red/80' : tone === 'approved' ? 'text-kibs-deepGreen/80' : 'text-slate-500';
+        ? 'bg-slate-100 text-slate-500'
+        : 'bg-white text-slate-950 shadow-card';
+  const labelClasses = tone === 'pending' ? 'text-white/60' : tone === 'approved' ? 'text-slate-400' : 'text-slate-400';
 
   return (
-    <div className={`rounded-2xl border p-3 text-center ${toneClasses}`}>
-      {Icon && <Icon className="mx-auto mb-1 h-4 w-4 opacity-70" />}
+    <div className={`rounded-2xl p-3 text-center ${toneClasses}`}>
+      {Icon && <Icon className="mx-auto mb-1 h-4 w-4 opacity-60" />}
       <p className="text-xl font-black">{value}</p>
       <p className={`text-[10px] font-bold uppercase tracking-wide ${labelClasses}`}>{label}</p>
     </div>
@@ -60,11 +59,8 @@ const EquipmentBar: React.FC<{ label: string; value: number; max: number }> = ({
         <span>{label}</span>
         <span className="font-black text-slate-900">{value}</span>
       </div>
-      <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-kibs-deepGreen transition-all"
-          style={{ width: `${pct}%` }}
-        />
+      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-kibs-ink transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -90,12 +86,10 @@ const TechnicianBar: React.FC<{ stat: TechnicianStat }> = ({ stat }) => {
           {total} survey{total === 1 ? '' : 's'}
         </span>
       </div>
-      <div className="mt-1 flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-        {stat.approved > 0 && (
-          <div className="h-full bg-kibs-deepGreen" style={{ width: `${approvedPct}%` }} />
-        )}
+      <div className="mt-1 flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        {stat.pending > 0 && <div className="h-full bg-kibs-ink" style={{ width: `${pendingPct}%` }} />}
         {stat.approved > 0 && stat.pending > 0 && <div className="h-full w-[2px] bg-white" />}
-        {stat.pending > 0 && <div className="h-full bg-kibs-red" style={{ width: `${pendingPct}%` }} />}
+        {stat.approved > 0 && <div className="h-full bg-slate-300" style={{ width: `${approvedPct}%` }} />}
       </div>
     </div>
   );
@@ -164,21 +158,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <StatTile label="Approval Rate" value={total > 0 ? `${approvalRate}%` : '—'} />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-card">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
             <Building2 className="h-3.5 w-3.5" /> Sites Awaiting Survey
             {openAssignments.length > 0 && (
-              <span className="rounded-full bg-kibs-red/10 px-1.5 py-0.5 text-[10px] font-black text-kibs-red">
+              <span className="rounded-full bg-kibs-ink px-1.5 py-0.5 text-[10px] font-black text-white">
                 {openAssignments.length}
               </span>
             )}
           </p>
-          <button
-            type="button"
-            onClick={onViewSites}
-            className="text-xs font-bold text-kibs-deepGreen hover:underline"
-          >
+          <button type="button" onClick={onViewSites} className="text-xs font-bold text-slate-900 hover:underline">
             View all
           </button>
         </div>
@@ -203,7 +193,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-card">
         <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
           <Sun className="h-3.5 w-3.5" /> Equipment Reported
         </p>
@@ -214,7 +204,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-card">
         <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Equipment by Rating</p>
         <div className="mt-3 grid gap-5 sm:grid-cols-2">
           <div className="space-y-2.5">
@@ -236,17 +226,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-card">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
             <ListChecks className="h-3.5 w-3.5" /> Technician Activity
           </p>
           <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500">
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-kibs-deepGreen" /> Approved
+              <span className="h-2 w-2 rounded-full bg-kibs-ink" /> Pending
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-kibs-red" /> Pending
+              <span className="h-2 w-2 rounded-full bg-slate-300" /> Approved
             </span>
           </div>
         </div>
@@ -266,11 +256,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
             Recent Surveys
           </p>
-          <button
-            type="button"
-            onClick={onViewAll}
-            className="text-xs font-bold text-kibs-deepGreen hover:underline"
-          >
+          <button type="button" onClick={onViewAll} className="text-xs font-bold text-slate-900 hover:underline">
             View all
           </button>
         </div>

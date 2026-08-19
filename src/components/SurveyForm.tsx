@@ -173,14 +173,14 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pb-6">
       {submitted && (
-        <div className="flex items-center gap-2 rounded-xl bg-kibs-deepGreen/10 px-3 py-2.5 text-xs font-bold text-kibs-deepGreen animate-fade-in">
+        <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2.5 text-xs font-bold text-slate-600 animate-fade-in">
           <CheckCircle2 className="h-4 w-4" />
           Survey submitted for approval.
         </div>
       )}
 
       {submitError && (
-        <div className="rounded-xl bg-kibs-red/10 px-3 py-2.5 text-xs font-bold text-kibs-red">
+        <div className="rounded-xl bg-kibs-ink px-3 py-2.5 text-xs font-bold text-white">
           {submitError}
         </div>
       )}
@@ -199,7 +199,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
                   onClearAssignment();
                   resetForm();
                 }}
-                className="shrink-0 text-[10px] font-bold text-kibs-deepGreen underline decoration-dotted"
+                className="shrink-0 text-[10px] font-bold text-kibs-ink underline decoration-dotted"
               >
                 Start blank instead
               </button>
@@ -211,7 +211,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3.5">
+      <div className="rounded-2xl bg-white p-4 shadow-card space-y-3.5">
         <div className="grid grid-cols-2 gap-2">
           {(
             [
@@ -225,7 +225,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
               onClick={() => setType(option.id)}
               className={`rounded-xl border py-2.5 text-xs font-bold transition ${
                 type === option.id
-                  ? 'border-kibs-deepGreen bg-kibs-deepGreen/10 text-kibs-deepGreen'
+                  ? 'border-kibs-ink bg-kibs-ink text-white'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
               }`}
             >
@@ -241,7 +241,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             value={siteName}
             onChange={(event) => setSiteName(event.target.value)}
             placeholder="e.g. ABC Apartments"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
           />
         </div>
 
@@ -252,7 +252,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             value={siteLocation}
             onChange={(event) => setSiteLocation(event.target.value)}
             placeholder="e.g. Kira Road, Block B"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
           />
         </div>
 
@@ -262,7 +262,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             <input
               value={contactPerson}
               onChange={(event) => setContactPerson(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
             />
           </div>
           <div>
@@ -270,7 +270,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             <input
               value={contactPhone}
               onChange={(event) => setContactPhone(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
             />
           </div>
         </div>
@@ -282,12 +282,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             required
             value={surveyDate}
             onChange={(event) => setSurveyDate(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
           />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 divide-y divide-slate-100">
+      <div className="rounded-2xl bg-white p-4 shadow-card divide-y divide-slate-100">
         <div className="pb-3.5">
           <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
             <Camera className="h-3.5 w-3.5" /> CCTV Cameras
@@ -303,7 +303,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
                   onChange={(event) =>
                     setCctv((prev) => ({ ...prev, [category]: Math.max(0, Number(event.target.value) || 0) }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
                 />
               </div>
             ))}
@@ -328,7 +328,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
                       [category]: Math.max(0, Number(event.target.value) || 0),
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
                 />
               </div>
             ))}
@@ -344,12 +344,12 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
             min={0}
             value={solarPanels}
             onChange={(event) => setSolarPanels(Math.max(0, Number(event.target.value) || 0))}
-            className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+            className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
           />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-card">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
             <ImagePlus className="h-3.5 w-3.5" /> Site Photos
@@ -376,7 +376,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
         )}
 
         {photos.length < MAX_PHOTOS && (
-          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 py-3 text-xs font-bold text-slate-500 transition hover:border-kibs-deepGreen hover:text-kibs-deepGreen">
+          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 py-3 text-xs font-bold text-slate-500 transition hover:border-kibs-ink hover:text-kibs-ink">
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" /> Processing photos…
@@ -408,14 +408,14 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({
           onChange={(event) => setNotes(event.target.value)}
           rows={3}
           placeholder="Anything else the admin should know..."
-          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-deepGreen focus:bg-white"
+          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-kibs-ink focus:bg-white"
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-deepGreen py-3.5 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-kibs-ink py-3.5 text-sm font-black text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
         {submitting ? 'Submitting…' : 'Submit Survey'}

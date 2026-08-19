@@ -38,7 +38,7 @@ export function Sidebar<T extends string>({
                 onClick={() => onChange(item.id)}
                 className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                   active
-                    ? 'bg-kibs-deepGreen text-white shadow-xs'
+                    ? 'bg-kibs-ink text-white shadow-card'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >

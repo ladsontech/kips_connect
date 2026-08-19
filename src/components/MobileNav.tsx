@@ -31,12 +31,12 @@ export function MobileNav<T extends string>({ items, activeId, onChange }: Mobil
               type="button"
               onClick={() => onChange(item.id)}
               className={`flex flex-1 flex-col items-center justify-center py-1 text-center transition-all ${
-                isActive ? 'text-kibs-deepGreen font-bold' : 'text-slate-500 hover:text-slate-800'
+                isActive ? 'text-kibs-ink font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
-                  isActive ? 'bg-kibs-green/15 text-kibs-deepGreen scale-105' : ''
+                  isActive ? 'bg-slate-100 text-kibs-ink scale-105' : ''
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -52,13 +52,13 @@ export function MobileNav<T extends string>({ items, activeId, onChange }: Mobil
             onClick={() => setDrawerOpen(true)}
             className={`flex flex-1 flex-col items-center justify-center py-1 text-center transition-all ${
               extraItems.some((item) => item.id === activeId)
-                ? 'text-kibs-deepGreen font-bold'
+                ? 'text-kibs-ink font-bold'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
-                extraItems.some((item) => item.id === activeId) ? 'bg-kibs-green/15 text-kibs-deepGreen' : ''
+                extraItems.some((item) => item.id === activeId) ? 'bg-slate-100 text-kibs-ink' : ''
               }`}
             >
               <MoreHorizontal className="h-4 w-4" />
@@ -96,11 +96,11 @@ export function MobileNav<T extends string>({ items, activeId, onChange }: Mobil
                     }}
                     className={`flex items-center gap-2.5 rounded-xl border p-3 text-left transition ${
                       isActive
-                        ? 'border-kibs-deepGreen bg-kibs-green/10 text-kibs-deepGreen font-bold'
+                        ? 'border-kibs-ink bg-kibs-ink text-white font-bold'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 ${isActive ? 'text-kibs-deepGreen' : 'text-slate-500'}`} />
+                    <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                     <span className="text-xs font-semibold">{item.label}</span>
                   </button>
                 );
